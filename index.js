@@ -16,15 +16,19 @@ app.use(
 
 //MODELS DB
 const Cliente = require('./models/Cliente');
+const Produto = require('./models/Produto');
 
 //ROUTES
 const clienteRoutes = require('./routes/clienteRoutes');
+const produtoRoutes = require('./routes/produtoRoutes');
 
 //USES
 app.use('/clientes', clienteRoutes);
+app.use('/produtos', produtoRoutes);
 
 conn
     .sync()
+    //.sync({force:true})
         .then(()=> app.listen(port))
         .catch((err)=>console.log(err))
 
