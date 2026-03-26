@@ -4,15 +4,7 @@ const conn = require('./db/conn');
 
 const port = 3000;
 
-
-//MODELS DB
-const Cliente = require('./models/Cliente');
-
-//ROUTES
-const clienteRoutes = require('./routes/clienteRoutes');
-
-//USES
-app.use('/clientes', clienteRoutes);
+app.use(express.json());
 
 app.use(
     express.urlencoded(
@@ -22,7 +14,14 @@ app.use(
     )
 );
 
-app.use(express.json());
+//MODELS DB
+const Cliente = require('./models/Cliente');
+
+//ROUTES
+const clienteRoutes = require('./routes/clienteRoutes');
+
+//USES
+app.use('/clientes', clienteRoutes);
 
 conn
     .sync()

@@ -21,7 +21,7 @@ module.exports = class clienteController{
     }
 
     static async criarCliente(req, res){
-        
+
         try {
 
             const {nome, email, cpf} = req.body;
