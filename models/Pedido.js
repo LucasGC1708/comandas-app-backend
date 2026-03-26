@@ -2,6 +2,8 @@ const {DataTypes} = require('sequelize');
 
 const db = require('../db/conn');
 
-const Comanda = db.define('comanda', {
+const Pedido = db.define('pedido', {
     
-})
+});
+
+module.exports = Pedido;
