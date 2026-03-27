@@ -15,6 +15,11 @@ const Cliente = db.define('cliente',{
         type: DataTypes.STRING,
         required:true
     },
+    ativo:{
+        type: DataTypes.BOOLEAN,
+        required: true,
+        defaultValue:true
+    }
 });
 
 module.exports = Cliente;

@@ -5,7 +5,7 @@ module.exports = class clienteController{
     static async buscaClientePorCPF(req, res){
         try {
             
-            const dadosCliente = await Cliente.findOne({where:{cpf: req.params.cpf}, raw:true});
+            const dadosCliente = await Cliente.findOne({where:{cpf: req.params.cpf}});
 
             if(!dadosCliente){
                 return res.status(404).json({success: false, message: "Cliente não foi encontrado"});

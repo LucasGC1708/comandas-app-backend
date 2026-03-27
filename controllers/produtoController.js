@@ -1,3 +1,4 @@
+const { raw } = require('express');
 const Produto = require('../models/Produto');
 
 module.exports = class produtoController{
@@ -29,6 +30,21 @@ module.exports = class produtoController{
             console.log(err);
             res.status(500).json({success:false, message: "Erro interno no servidor"});
 
+        }
+    }
+
+    static async buscarProduto(req, res){
+        try {
+            
+            const {id} = req.params;
+
+            const produto = await Produto.findOne({where:{id}});
+
+            res.status(200).json({success: true, produto});
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({success:false, message:"Erro no servidor"});
         }
     }
 

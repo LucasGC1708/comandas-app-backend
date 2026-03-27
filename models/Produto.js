@@ -11,6 +11,11 @@ const Produto = db.define('produto', {
         type: DataTypes.DOUBLE,
         required: true,
         defaultValue:0.00
+    },
+    ativo:{
+        type: DataTypes.BOOLEAN,
+        required: true,
+        defaultValue:true
     }
 });
 
