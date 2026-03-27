@@ -1,11 +1,17 @@
-const {Item, Produto} = require('../models/Index');
+const {Item, Produto, Pedido} = require('../models/Index');
 
 module.exports = class itemController{
 
     static async criarItem(req, res){
         try {
             
-            const {produto_id, quantidade} = req.body;
+            const {produto_id, pedido_id , quantidade} = req.body;
+
+            const pedido = await Pedido.findOne({where:{id:pedido_id}});
+
+            if(!pedido){
+                res.status(404).json({success:false, message: "Pedido não foi encontrado"});
+            }
 
             const produto = await Produto.findOne({where:{id: produto_id}});
 
@@ -18,6 +24,7 @@ module.exports = class itemController{
             const item = {
                 produto_id,
                 quantidade,
+                pedido_id,
                 valorTotal
             };
 
@@ -28,6 +35,14 @@ module.exports = class itemController{
         } catch (err) {
             console.log(err);
             res.status(500).json({message: "Erro no servidor"});
+        }
+    }
+
+    static async buscaItem(req, res){
+        try {
+            
+        } catch (err) {
+            
         }
     }
 }

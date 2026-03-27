@@ -23,11 +23,13 @@ const {Cliente, Produto, Item, Pedido} = require('./models/Index');
 const clienteRoutes = require('./routes/clienteRoutes');
 const produtoRoutes = require('./routes/produtoRoutes');
 const itemRoutes = require('./routes/itemRoutes');
+const pedidoRoutes = require('./routes/pedidoRoutes');
 
 //USES
 app.use('/clientes', clienteRoutes);
 app.use('/produtos', produtoRoutes);
 app.use('/itens', itemRoutes);
+app.use('/pedidos', pedidoRoutes);
 
 conn
     .sync()
