@@ -59,4 +59,25 @@ module.exports = class clienteController{
 
     }
 
+    static async desativaCliente(req,res){
+        try {
+            
+            const {id} = req.params
+
+            const pedidoCadastrado = await Cliente.findOne({where: {id}});
+
+            if(!pedidoCadastrado){
+                return res.status(404).json({success:false, message:"Cliente não foi encontrado"});
+            }
+
+            await pedidoCadastrado.update({ativo:false});
+
+            res.status(200).json({success: true, message:"Cliente foi desativado"});
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({success:false, message:"Erro no servidor"});
+        }
+    }
+
 }
