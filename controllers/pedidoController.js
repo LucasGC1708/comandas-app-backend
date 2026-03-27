@@ -13,6 +13,15 @@ module.exports = class pedidoController{
             if(!cliente){
                 return res.status(404).json({success:false, message: "Cliente não encontrado"});
             }
+            
+            const pedidoPendente = await Pedido.findAll({
+                where:{cliente_id, status:"pendente"},
+                attributes:{exclude:['createdAt', 'updatedAt']}
+            });
+
+            if(pedidoPendente.length > 0){
+                return res.status(400).json({success:false, message:"O cliente em questão tem um pedido pendente em seu nome", pendente:pedidoPendente});
+            }
 
             const pedido = {
                 cliente_id
@@ -35,7 +44,7 @@ module.exports = class pedidoController{
 
             const pedido = await Pedido.findOne({where:{id},include:[{
                     association:'itens',
-                    attributes:['valorTotal'],
+                    attributes:['quantidade','valorTotal'],
                     include:[{
                         association: 'produto',
                         attributes: ['id', 'nome', 'preco']
@@ -46,12 +55,6 @@ module.exports = class pedidoController{
             if(!pedido){
                 return res.status(404).json({success:false, message: "Pedido não foi encontrado"});
             }
-
-            const total = pedido.itens.reduce((acc, item) => {
-                return acc + Number(item.valorTotal);
-            }, 0);
-
-            pedido.dataValues.valorPedido = total;
 
             res.status(200).json({success:true, data: pedido});    
         } catch (err) {
@@ -84,7 +87,32 @@ module.exports = class pedidoController{
 
             await pedidoCadastrado.update({status: "finalizado"});
 
+            await OrdemCompra.create({
+                pedido_id: pedido.id
+            });
+
             res.status(200).json({success:true, message:"Pedido finalizado com sucesso"});
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({success:false, message:"Erro no servidor"});
+        }
+    }
+
+    static async apagarPedido(req, res){
+        try {
+            
+            const {id} = req.params;
+
+            const pedidoCadastrado = await Pedido.findOne({where:{id}});
+
+            if(!pedidoCadastrado){
+                return res.status(404).json({success:false, message:"Pedido não foi encontrado para a exclusão"});
+            }
+
+            await pedidoCadastrado.destroy();
+
+            res.status(200).json({success:true, message:"Pedido excluído com sucesso"});
 
         } catch (err) {
             console.log(err);

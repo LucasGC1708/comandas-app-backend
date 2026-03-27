@@ -10,13 +10,13 @@ module.exports = class itemController{
             const pedido = await Pedido.findOne({where:{id:pedido_id}});
 
             if(!pedido){
-                res.status(404).json({success:false, message: "Pedido não foi encontrado"});
+                return res.status(404).json({success:false, message: "Pedido não foi encontrado"});
             }
 
             const produto = await Produto.findOne({where:{id: produto_id}});
 
             if(!produto){
-                res.status(404).json({success: false, message: "Produto não encontrando"});
+                return res.status(404).json({success: false, message: "Produto não encontrando"});
             }
 
             const valorTotal = produto.preco * quantidade;
@@ -29,6 +29,10 @@ module.exports = class itemController{
             };
 
             await Item.create(item);
+
+            await pedido.increment('valorPedido', {
+                by: valorTotal
+            });
 
             res.status(201).json({success: true, item});
 

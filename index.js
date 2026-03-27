@@ -15,7 +15,7 @@ app.use(
 );
 
 //MODELS DB
-const {Cliente, Produto, Item, Pedido} = require('./models/Index');
+const {Cliente, Produto, Item, Pedido, OrdemCompra} = require('./models/Index');
 // const Cliente = require('./models/Cliente');
 // const Produto = require('./models/Produto');
 

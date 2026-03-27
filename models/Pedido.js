@@ -11,7 +11,12 @@ const Pedido = db.define('pedido', {
         type: DataTypes.ENUM('pendente', 'aguardando_pagamento', 'finalizado'),
         required: true,
         defaultValue: 'pendente'
-    }
+    },
+    valorPedido: {
+        type: DataTypes.DOUBLE,
+        required: true,
+        defaultValue:0.00
+    },
 });
 
 module.exports = Pedido;
