@@ -16,7 +16,7 @@ module.exports = class itemController{
             const produto = await Produto.findOne({where:{id: produto_id}});
 
             if(!produto){
-                res.status(404).json({success: false, message: "Produto não encotrando"});
+                res.status(404).json({success: false, message: "Produto não encontrando"});
             }
 
             const valorTotal = produto.preco * quantidade;
