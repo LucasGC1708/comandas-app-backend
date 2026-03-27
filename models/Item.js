@@ -10,6 +10,7 @@ const Item = db.define('item',{
     valorTotal: {
         type: DataTypes.DOUBLE,
         required: true,
+        defaultValue:0.00
     },
     produto_id:{
         type: DataTypes.INTEGER,

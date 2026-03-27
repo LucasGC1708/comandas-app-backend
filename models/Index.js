@@ -14,17 +14,17 @@ Item.belongsTo(Pedido, {
     as:"pedido"
 });
 
-
-
 //RELAÇOES PRODUTO 
 
 Produto.hasMany(Item,{
-    foreignKey: "produto_id"
+    foreignKey: "produto_id",
+    as:'itens'
 });
 
 //RELAÇÕES CLIENTE
 Cliente.hasMany(Pedido,{
-    foreignKey:"cliente_id"
+    foreignKey:"cliente_id",
+    as:'pedidos'
 });
 
 //RELAÇÕES PEDIDO
@@ -35,6 +35,7 @@ Pedido.belongsTo(Cliente,{
 
 Pedido.hasMany(Item,{
     foreignKey:"pedido_id",
+    as:'itens'
 });
 
 

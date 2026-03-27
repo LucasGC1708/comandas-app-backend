@@ -9,7 +9,8 @@ const Produto = db.define('produto', {
     },
     preco: {
         type: DataTypes.DOUBLE,
-        required: true
+        required: true,
+        defaultValue:0.00
     }
 });
 

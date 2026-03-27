@@ -41,8 +41,23 @@ module.exports = class itemController{
     static async buscaItem(req, res){
         try {
             
+            const id = req.params.id;
+
+            const item = await Item.findOne({where:{id},include:[{
+                association:'produto',
+                attributes:['id', 'nome', 'preco']
+            }]});
+
+            if(!item){
+                res.status(404).json({success:false, message:"Item não foi encontrado"});
+            }
+
+            res.status(200).json({success:true, item});
+
+
         } catch (err) {
-            
+            console.log(err);
+            res.status(500).json({success:false, message:"Erro no servidor"});
         }
     }
 }

@@ -7,6 +7,11 @@ const Pedido = db.define('pedido', {
         type:DataTypes.INTEGER,
         require:true
     },
+    status: {
+        type: DataTypes.ENUM('pendente', 'aguardando_pagamento', 'finalizado'),
+        required: true,
+        defaultValue: 'pendente'
+    }
 });
 
 module.exports = Pedido;
