@@ -46,9 +46,9 @@ module.exports = class clienteController{
                 cpf
             }
 
-            await Cliente.create(cliente);
+            const novoCliente = await Cliente.create(cliente);
 
-            res.status(201).json({success:true, message: "Cliente criado com sucesso", data: cliente});
+            res.status(201).json({success:true, message: "Cliente criado com sucesso", data: novoCliente});
 
         } catch (err) {
             
@@ -70,9 +70,9 @@ module.exports = class clienteController{
                 return res.status(404).json({success:false, message:"Cliente não foi encontrado"});
             }
 
-            await pedidoCadastrado.update({ativo:false});
+            const desativacaoCliente = await pedidoCadastrado.update({ativo:false});
 
-            res.status(200).json({success: true, message:"Cliente foi desativado"});
+            res.status(200).json({success: true, message:"Cliente foi desativado", data:desativacaoCliente});
 
         } catch (err) {
             console.log(err);

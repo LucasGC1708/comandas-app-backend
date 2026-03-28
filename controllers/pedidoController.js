@@ -1,5 +1,4 @@
-const { where } = require('sequelize');
-const {Pedido, Cliente} = require('../models/Index');
+const {Pedido, Cliente, OrdemVenda} = require('../models/Index');
 
 module.exports = class pedidoController{
 
@@ -27,10 +26,10 @@ module.exports = class pedidoController{
                 cliente_id
             }
 
-            await Pedido.create(pedido);
+            const novoPedido = await Pedido.create(pedido);
 
 
-            res.status(201).json({success:true, message:"Pedido criado com sucesso"});
+            res.status(201).json({success:true, message:"Pedido criado com sucesso", data:novoPedido});
         } catch (err) {
             console.log(err);
             res.status(500).json({success:false, message:"Erro no servidor"});
@@ -56,7 +55,7 @@ module.exports = class pedidoController{
                 return res.status(404).json({success:false, message: "Pedido não foi encontrado"});
             }
 
-            res.status(200).json({success:true, data: pedido});    
+            res.status(200).json({success:true, message:"Pedido encontrado com sucesso", data: pedido});    
         } catch (err) {
             console.log(err);
             res.status(500).json({success:false, message:"Erro no servidor"});
@@ -85,13 +84,13 @@ module.exports = class pedidoController{
                 return res.status(400).json({success:false, message:"Pedido não possui itens"});
             }
 
-            await pedidoCadastrado.update({status: "finalizado"});
+            const finalizacaoPedido = await pedidoCadastrado.update({status: "finalizado"});
 
-            await OrdemCompra.create({
-                pedido_id: pedido.id
+            await OrdemVenda.create({
+                pedido_id: pedidoCadastrado.id
             });
 
-            res.status(200).json({success:true, message:"Pedido finalizado com sucesso"});
+            res.status(200).json({success:true, message:"Pedido finalizado com sucesso", data: finalizacaoPedido});
 
         } catch (err) {
             console.log(err);
@@ -102,7 +101,7 @@ module.exports = class pedidoController{
     static async apagarPedido(req, res){
         try {
             
-            const {id} = req.params;
+            const {id} = req.body;
 
             const pedidoCadastrado = await Pedido.findOne({where:{id}});
 
@@ -110,9 +109,15 @@ module.exports = class pedidoController{
                 return res.status(404).json({success:false, message:"Pedido não foi encontrado para a exclusão"});
             }
 
-            await pedidoCadastrado.destroy();
+            const ordemDePedido = OrdemVenda.findOne({where:{pedido_id:pedidoCadastrado.id, status:"entregue"},raw:true});
 
-            res.status(200).json({success:true, message:"Pedido excluído com sucesso"});
+            if(ordemDePedido){
+                return res.status(400).json({success:false, message:"Este pedido não pode mais ser excluído pois sua ordem de venda já foi finalizada"});
+            }
+
+            const exclusaoPedido = await pedidoCadastrado.destroy();
+
+            res.status(200).json({success:true, message:"Pedido excluído com sucesso", data:exclusaoPedido});
 
         } catch (err) {
             console.log(err);

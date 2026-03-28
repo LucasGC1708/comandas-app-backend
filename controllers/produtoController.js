@@ -21,9 +21,9 @@ module.exports = class produtoController{
                 preco
             };
 
-            await Produto.create(produto);
+            const novoProduto = await Produto.create(produto);
 
-            res.status(201).json({success:true, message: "Produto criado com sucesso" ,data: produto});
+            res.status(201).json({success:true, message: "Produto criado com sucesso" ,data: novoProduto});
 
         } catch (err) {
             
@@ -40,7 +40,7 @@ module.exports = class produtoController{
 
             const produto = await Produto.findOne({where:{id}});
 
-            res.status(200).json({success: true, produto});
+            res.status(200).json({success: true, message:"Produto encontrado com sucesso",data:produto});
 
         } catch (err) {
             console.log(err);

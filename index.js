@@ -16,7 +16,7 @@ app.use(
 );
 
 //MODELS DB
-const {Cliente, Produto, Item, Pedido, OrdemCompra} = require('./models/Index');
+const {Cliente, Produto, Item, Pedido, OrdemVenda} = require('./models/Index');
 // const Cliente = require('./models/Cliente');
 // const Produto = require('./models/Produto');
 
@@ -25,12 +25,14 @@ const clienteRoutes = require('./routes/clienteRoutes');
 const produtoRoutes = require('./routes/produtoRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const pedidoRoutes = require('./routes/pedidoRoutes');
+const ordemVendaRoutes = require('./routes/ordemVendaRoutes');
 
 //USES
 app.use('/clientes', clienteRoutes);
 app.use('/produtos', produtoRoutes);
 app.use('/itens', itemRoutes);
 app.use('/pedidos', pedidoRoutes);
+app.use('/ordemVenda', ordemVendaRoutes);
 
 conn
     .sync()

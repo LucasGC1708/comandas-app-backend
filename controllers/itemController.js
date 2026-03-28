@@ -28,13 +28,13 @@ module.exports = class itemController{
                 valorTotal
             };
 
-            await Item.create(item);
+            const novoItem = await Item.create(item);
 
             await pedido.increment('valorPedido', {
                 by: valorTotal
             });
 
-            res.status(201).json({success: true, item});
+            res.status(201).json({success: true, message:"Item criado com sucesso", data:novoItem});
 
         } catch (err) {
             console.log(err);
@@ -56,7 +56,7 @@ module.exports = class itemController{
                 res.status(404).json({success:false, message:"Item não foi encontrado"});
             }
 
-            res.status(200).json({success:true, item});
+            res.status(200).json({success:true, message:"Produto encontrado com sucesso" , data:item});
 
 
         } catch (err) {
