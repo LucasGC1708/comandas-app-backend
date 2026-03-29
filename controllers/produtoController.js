@@ -68,6 +68,46 @@ module.exports = class produtoController{
         }
     }
 
+    static async editarProduto(req, res){
+
+        try {
+            
+            const {id, preco} = req.body;
+
+            if (!id || !preco) {
+                 return res.status(400).json({success:false, message: "Favor preenhcer os campos"});
+            }
+
+            if (isNaN(preco)) {
+                return res.status(400).json({success:false, message: "Favor preenhcer preco com número"});
+            }
+
+            const produtoCadastrado = await Produto.findOne({where:{id}});
+
+            const valorAnterior = produtoCadastrado.preco;
+
+            if(!produtoCadastrado){
+                 return res.status(404).json({success:false, message: "Produto não foi encontrado"});
+            }
+
+            const edicaoProduto = await produtoCadastrado.update({preco});
+
+            await registrarLog({
+                tabela_db:"Produtos",
+                acao:"Edição",
+                registro_id:edicaoProduto.id,
+                detalhe:`Produto ${edicaoProduto.nome} foi editado novo valor ${edicaoProduto.preco} e valor anterior era ${valorAnterior}`
+            });
+
+            res.status(200).json({success: false, message:"Produto editado com sucesso", data:edicaoProduto});
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({success:false, message:"Erro no servidor"});
+        }
+
+    }
+
     static async desativarProduto(req, res){
         try {
             

@@ -94,6 +94,86 @@ module.exports = class itemController{
         }
     }
 
+    static async editarItem(req, res){
+        const {id, produto_id, quantidade} = req.body;
+
+        if(!produto_id || !id || !quantidade){
+            return res.status(400).json({success:false, message:"Favor precheender todos os campos"})
+        }
+
+        const t = await db.transaction();
+        
+        try {
+
+            const itemCadastrado = await Item.findOne({where:{id}});
+
+            if (!itemCadastrado) {
+                await t.rollback();
+                return res.status(404).json({success:false, message: "Item não foi encontrado"});
+            }
+
+            const valorAnterior =  itemCadastrado.valorTotal;
+
+            const pedido = await Pedido.findOne({where:{id:itemCadastrado.pedido_id}, transaction: t, lock: t.LOCK.UPDATE});
+
+            if(!pedido){
+                await t.rollback();
+                return res.status(404).json({success:false, message: "Pedido não foi encontrado"});
+            }
+
+            if(pedido.status !== 'pendente'){
+                await t.rollback();
+                return res.status(400).json({success:false, message: "Pedido já foi finalizado"});
+            }
+
+            const produto = await Produto.findOne({where:{id: produto_id}, transaction: t});
+
+            if(!produto){
+                await t.rollback();
+                return res.status(404).json({success: false, message: "Produto não encontrando"});
+            }
+
+            const valorTotal = formataPreco(produto.preco * quantidade);
+
+            const item = {
+                produto_id,
+                quantidade,
+                pedido_id:itemCadastrado.pedido_id,
+                valorTotal
+            };
+
+            const edicaoItem = await itemCadastrado.update(item,{transaction: t});
+
+            await pedido.decrement('valorPedido', {
+                by: valorAnterior,
+                transaction: t
+            });
+
+            await pedido.increment('valorPedido', {
+                by: valorTotal,
+                transaction: t
+            });
+
+            await t.commit();
+
+            await registrarLog({
+                tabela_db:"Itens",
+                acao:"Edição",
+                registro_id:edicaoItem.id,
+                detalhe:`Item foi editado para o pedido ${edicaoItem.pedido_id}`
+            });
+
+            return res.status(201).json({success: true, message:"Item editado com sucesso", data:edicaoItem});
+
+        } catch (err) {
+            if(!t.finished){
+                await t.rollback();
+            }
+            console.log(err);
+            return res.status(500).json({message: "Erro no servidor"});
+        }
+    }
+
     static async removerItem(req, res){
         
         const {id} = req.body;
