@@ -113,9 +113,9 @@ module.exports = class pedidoController{
                 return res.status(404).json({success:false, message:"Pedido não foi encontrado para a exclusão"});
             }
 
-            const ordemDePedido = OrdemVenda.findOne({where:{pedido_id:pedidoCadastrado.id, status:"entregue"},raw:true});
+            const ordemDePedido = await OrdemVenda.findOne({where:{pedido_id:pedidoCadastrado.id, status:"entregue"},raw:true});
 
-            if(ordemDePedido){
+            if(ordemDePedido.length > 0){
                 return res.status(400).json({success:false, message:"Este pedido não pode mais ser excluído pois sua ordem de venda já foi finalizada"});
             }
 
