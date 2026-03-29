@@ -7,6 +7,10 @@ module.exports = class pedidoController{
             
             const {cliente_id} = req.body;
 
+            if(!cliente_id){
+                return res.status(400).json({success:false, message:"Favor informar o cliente do pedido"});
+            }
+
             const cliente = await Cliente.findOne({where:{id:cliente_id}, raw:true});
 
             if(!cliente){

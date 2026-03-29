@@ -48,4 +48,25 @@ module.exports = class produtoController{
         }
     }
 
+    static async desativarProduto(req, res){
+        try {
+            
+            const {id} = req.body;
+
+            const produtoCadastrado = await Produto.findOne({where:{id, ativo:true}});
+
+            if(!produtoCadastrado){
+                return res.status(400).json({success:false, message:"Produto não encontrado ou já desativado"});
+            }
+
+            const atualizacaoProduto = await produtoCadastrado.update({ativo:false});
+
+            res.status(200).json({success:true, message:"Produto desativado com sucesso", data: atualizacaoProduto});
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({success:false, message:"Erro no servidor"});
+        }
+    }
+
 }

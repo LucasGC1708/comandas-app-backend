@@ -7,6 +7,10 @@ module.exports = class itemController{
             
             const {produto_id, pedido_id , quantidade} = req.body;
 
+            if(!produto_id, !pedido_id, !quantidade){
+                return res.status(404).json({success:false, message:"Favor precheender todos os campos"})
+            }
+
             const pedido = await Pedido.findOne({where:{id:pedido_id}});
 
             if(!pedido){
@@ -58,6 +62,41 @@ module.exports = class itemController{
 
             res.status(200).json({success:true, message:"Produto encontrado com sucesso" , data:item});
 
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({success:false, message:"Erro no servidor"});
+        }
+    }
+
+    static async removerItem(req, res){
+        try {
+            
+            const {id} = req.body;
+
+            const itemCadastrado = await Item.findOne({where:{id}});
+
+            if(!itemCadastrado){
+                return res.status(400).json({success:false, message:"Item não foi encontrado"});
+            }
+
+            if(itemCadastrado.pedido_id == null){
+                return res.status(400).json({success:false, message:"Item não possui pedido para ser removido"});
+            }
+
+            const pedidoCadastrado = await Pedido.findOne({where:{id:itemCadastrado.pedido_id,status:"pendente"}});
+
+            if(!pedidoCadastrado){
+                return res.status(400).json({success:false, message:"Pedido associado ao item não encontrado ou finalizado"});
+            }
+
+            const deletarItem = await itemCadastrado.destroy();
+
+            await pedidoCadastrado.decrement('valorPedido', {
+                by: itemCadastrado.valorTotal
+            });
+
+            res.status(200).json({success:true, message:"Item removido com sucesso", data:deletarItem});
 
         } catch (err) {
             console.log(err);

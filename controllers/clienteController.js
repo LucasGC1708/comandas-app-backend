@@ -31,7 +31,7 @@ module.exports = class clienteController{
             }
 
             if(cpf.length != 11){
-                return res.status(400).json({success:false, message: "Necessário que cpf tenha apenas 11 caracteres", nome, cpf, email});
+                return res.status(400).json({success:false, message: "Necessário que cpf tenha 11 caracteres", nome, cpf, email});
             }
 
             const clienteCadastrado = await Cliente.findOne({where:{cpf}});
