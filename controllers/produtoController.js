@@ -1,5 +1,5 @@
-const { raw } = require('express');
 const Produto = require('../models/Produto');
+const registrarLog = require('../utils/log');
 
 module.exports = class produtoController{
 
@@ -9,11 +9,11 @@ module.exports = class produtoController{
             const {nome, preco} = req.body;
 
             if(!nome || !preco){
-                res.status(400).json({success:false, message: "Favor preenhcer todos os campos"});
+                return res.status(400).json({success:false, message: "Favor preenhcer todos os campos"});
             }
 
-            if(typeof preco !== "number"){
-                res.status(400).json({success:false, message: "Favor preenhcer preco com número"});
+            if(isNaN(preco)){
+                return res.status(400).json({success:false, message: "Favor preenhcer preco com número"});
             }
 
             const produto = {
@@ -22,6 +22,13 @@ module.exports = class produtoController{
             };
 
             const novoProduto = await Produto.create(produto);
+
+            await registrarLog({
+                tabela_db:"Produtos",
+                acao:"Criar",
+                registro_id:novoProduto.id,
+                detalhe:`Novo produto ${novoProduto.nome} foi criado`
+            });
 
             res.status(201).json({success:true, message: "Produto criado com sucesso" ,data: novoProduto});
 
@@ -48,6 +55,19 @@ module.exports = class produtoController{
         }
     }
 
+    static async listarProdutos(req, res){
+        try {
+
+            const produto = await Produto.findAll({where:{ativo:true}});
+
+            res.status(200).json({success: true, message:"Produto encontrado com sucesso",data:produto});
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({success:false, message:"Erro no servidor"});
+        }
+    }
+
     static async desativarProduto(req, res){
         try {
             
@@ -60,6 +80,13 @@ module.exports = class produtoController{
             }
 
             const atualizacaoProduto = await produtoCadastrado.update({ativo:false});
+
+            await registrarLog({
+                tabela_db:"Produtos",
+                acao:"Excluir",
+                registro_id:atualizacaoProduto.id,
+                detalhe:`Produto ${atualizacaoProduto.nome} foi desativado`
+            });
 
             res.status(200).json({success:true, message:"Produto desativado com sucesso", data: atualizacaoProduto});
 

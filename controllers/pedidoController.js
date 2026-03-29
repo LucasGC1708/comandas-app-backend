@@ -1,24 +1,25 @@
 const {Pedido, Cliente, OrdemVenda} = require('../models/Index');
+const registrarLog = require('../utils/log');
 
 module.exports = class pedidoController{
 
     static async criarPedido(req,res){
         try {
             
-            const {cliente_id} = req.body;
+            const {cpf} = req.body;
 
-            if(!cliente_id){
+            if(!cpf){
                 return res.status(400).json({success:false, message:"Favor informar o cliente do pedido"});
             }
 
-            const cliente = await Cliente.findOne({where:{id:cliente_id}, raw:true});
+            const cliente = await Cliente.findOne({where:{cpf:cpf}, raw:true});
 
             if(!cliente){
                 return res.status(404).json({success:false, message: "Cliente não encontrado"});
             }
             
             const pedidoPendente = await Pedido.findAll({
-                where:{cliente_id, status:"pendente"},
+                where:{cliente_id:cliente.id, status:"pendente"},
                 attributes:{exclude:['createdAt', 'updatedAt']}
             });
 
@@ -27,11 +28,17 @@ module.exports = class pedidoController{
             }
 
             const pedido = {
-                cliente_id
+                cliente_id:cliente.id
             }
 
             const novoPedido = await Pedido.create(pedido);
 
+            await registrarLog({
+                tabela_db:"Pedidos",
+                acao:"Criar",
+                registro_id:novoPedido.id,
+                detalhe:`Pedido criado com sucesso ${novoPedido.id} para o cliente ${novoPedido.cliente_id}`
+            });
 
             res.status(201).json({success:true, message:"Pedido criado com sucesso", data:novoPedido});
         } catch (err) {
@@ -47,7 +54,7 @@ module.exports = class pedidoController{
 
             const pedido = await Pedido.findOne({where:{id},include:[{
                     association:'itens',
-                    attributes:['quantidade','valorTotal'],
+                    attributes:['quantidade','valorTotal', 'id'],
                     include:[{
                         association: 'produto',
                         attributes: ['id', 'nome', 'preco']
@@ -90,8 +97,22 @@ module.exports = class pedidoController{
 
             const finalizacaoPedido = await pedidoCadastrado.update({status: "finalizado"});
 
+            await registrarLog({
+                tabela_db:"Pedidos",
+                acao:"Finalizado",
+                registro_id:finalizacaoPedido.id,
+                detalhe:`Pedido ${finalizacaoPedido.id} foi finalizado`
+            });
+
             await OrdemVenda.create({
                 pedido_id: pedidoCadastrado.id
+            });
+
+            await registrarLog({
+                tabela_db:"Ordem_Vendas",
+                acao:"Criada",
+                registro_id:OrdemVenda.id,
+                detalhe:`Ordem ${OrdemVenda.id} foi criada através do pedido ${OrdemVenda.pedido_id}`
             });
 
             res.status(200).json({success:true, message:"Pedido finalizado com sucesso", data: finalizacaoPedido});
@@ -115,11 +136,18 @@ module.exports = class pedidoController{
 
             const ordemDePedido = await OrdemVenda.findOne({where:{pedido_id:pedidoCadastrado.id, status:"entregue"},raw:true});
 
-            if(ordemDePedido.length > 0){
+            if(ordemDePedido){
                 return res.status(400).json({success:false, message:"Este pedido não pode mais ser excluído pois sua ordem de venda já foi finalizada"});
             }
 
             const exclusaoPedido = await pedidoCadastrado.destroy();
+
+            await registrarLog({
+                tabela_db:"Pedidos",
+                acao:"Excluir",
+                registro_id:exclusaoPedido.id,
+                detalhe:`Exclusão de pedido ${exclusaoPedido.id} realizada`
+            });
 
             res.status(200).json({success:true, message:"Pedido excluído com sucesso", data:exclusaoPedido});
 

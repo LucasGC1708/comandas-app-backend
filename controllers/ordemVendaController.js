@@ -1,4 +1,5 @@
 const {OrdemVenda, Pedido} = require('../models/Index');
+const registrarLog = require('../utils/log');
 
 module.exports = class ordemVendaController{
 
@@ -42,6 +43,13 @@ module.exports = class ordemVendaController{
             }
 
             const atualizacaoOrdemVenda = await dadosOrdemVenda.update({status:"entregue"});
+
+            await registrarLog({
+                tabela_db:"Ordem_vendas",
+                acao:"Finalizada",
+                registro_id:atualizacaoOrdemVenda.id,
+                detalhe:`Ordem de venda ${atualizacaoOrdemVenda.id} foi finalizada`
+            });
 
             res.status(200).json({success:true, message:"Ordem de venda finalizada", data:atualizacaoOrdemVenda});
 

@@ -3,6 +3,7 @@ const Cliente = require('./Cliente');
 const Pedido = require('./Pedido');
 const Item = require('./Item');
 const OrdemVenda = require('./OrdemVenda');
+const Log = require('./Log');
 
 //RELAÇÕES ITEM 
 Item.belongsTo(Produto, {
@@ -56,4 +57,4 @@ OrdemVenda.belongsTo(Pedido, {
 
 
 
-module.exports = {Cliente, Produto, Item, Pedido, OrdemVenda};
+module.exports = {Cliente, Produto, Item, Pedido, OrdemVenda, Log};

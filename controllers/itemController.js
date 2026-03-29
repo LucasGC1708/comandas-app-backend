@@ -1,5 +1,6 @@
 const {Item, Produto, Pedido} = require('../models/Index');
 const {formataPreco} = require('../utils/helpers');
+const registrarLog = require('../utils/log');
 const db = require('../db/conn');
 
 module.exports = class itemController{
@@ -51,6 +52,13 @@ module.exports = class itemController{
             });
 
             await t.commit();
+
+            await registrarLog({
+                tabela_db:"Itens",
+                acao:"Criar",
+                registro_id:novoItem.id,
+                detalhe:`Novo Item foi criado para o pedido ${novoItem.pedido_id}`
+            });
 
             return res.status(201).json({success: true, message:"Item criado com sucesso", data:novoItem});
 
@@ -125,6 +133,13 @@ module.exports = class itemController{
             });
 
             await t.commit();
+
+            await registrarLog({
+                tabela_db:"Itens",
+                acao:"Excluir",
+                registro_id:deletarItem.id,
+                detalhe:`Remoção do item realizada no pedido ${deletarItem.pedido_id}`
+            });
 
             return res.status(200).json({success:true, message:"Item removido com sucesso", data:deletarItem});
 

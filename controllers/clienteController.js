@@ -1,11 +1,12 @@
 const Cliente = require('../models/Cliente');
+const registrarLog = require('../utils/log');
 
 module.exports = class clienteController{
 
     static async buscaClientePorCPF(req, res){
         try {
             
-            const dadosCliente = await Cliente.findOne({where:{cpf: req.params.cpf}});
+            const dadosCliente = await Cliente.findOne({where:{cpf: req.params.cpf, ativo:true}});
 
             if(!dadosCliente){
                 return res.status(404).json({success: false, message: "Cliente não foi encontrado"});
@@ -48,6 +49,13 @@ module.exports = class clienteController{
 
             const novoCliente = await Cliente.create(cliente);
 
+            await registrarLog({
+                tabela_db:"Clientes",
+                acao:"Criar",
+                registro_id:novoCliente.id,
+                detalhe:`Novo cliente ${novoCliente.nome} adicionado`
+            });
+
             res.status(201).json({success:true, message: "Cliente criado com sucesso", data: novoCliente});
 
         } catch (err) {
@@ -62,7 +70,7 @@ module.exports = class clienteController{
     static async desativaCliente(req,res){
         try {
             
-            const {id} = req.params
+            const {id} = req.body;
 
             const pedidoCadastrado = await Cliente.findOne({where: {id}});
 
@@ -71,6 +79,13 @@ module.exports = class clienteController{
             }
 
             const desativacaoCliente = await pedidoCadastrado.update({ativo:false});
+
+            await registrarLog({
+                tabela_db:"Clientes",
+                acao:"Desativar",
+                registro_id:desativacaoCliente.id,
+                detalhe:`Cliente ${desativacaoCliente.nome} foi desativado`
+            });
 
             res.status(200).json({success: true, message:"Cliente foi desativado", data:desativacaoCliente});
 
