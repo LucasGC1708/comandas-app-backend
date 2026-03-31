@@ -27,8 +27,19 @@ module.exports = class pedidoController{
                 return res.status(400).json({success:false, message:"O cliente em questão tem um pedido pendente em seu nome", pendente:pedidoPendente});
             }
 
+            const ultimoPedidoCriado = await Pedido.findOne({
+                order: [['createdAt', 'DESC']],
+            });
+
+            numeroPedido = 1;
+
+            if (ultimoPedidoCriado) {
+                numeroPedido = numeroPedido + ultimoPedidoCriado.numero_pedido;
+            }
+
             const pedido = {
-                cliente_id:cliente.id
+                cliente_id:cliente.id,
+                numero_pedido:numeroPedido,
             }
 
             const novoPedido = await Pedido.create(pedido);
@@ -37,7 +48,7 @@ module.exports = class pedidoController{
                 tabela_db:"Pedidos",
                 acao:"Criar",
                 registro_id:novoPedido.id,
-                detalhe:`Pedido criado com sucesso ${novoPedido.id} para o cliente ${novoPedido.cliente_id}`
+                detalhe:`Pedido criado com sucesso ${novoPedido.numero_pedido} para o cliente ${novoPedido.cliente_id}`
             });
 
             res.status(201).json({success:true, message:"Pedido criado com sucesso", data:novoPedido});

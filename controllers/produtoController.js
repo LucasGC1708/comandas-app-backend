@@ -16,9 +16,20 @@ module.exports = class produtoController{
                 return res.status(400).json({success:false, message: "Favor preenhcer preco com número"});
             }
 
+            const ultimoProdutoCriado = await Produto.findOne({
+                order: [['createdAt', 'DESC']],
+            });
+
+            let numeroSku = 100000;
+
+            if(ultimoProdutoCriado){
+                numeroSku = ultimoProdutoCriado.sku + 1;
+            }
+
             const produto = {
                 nome,
-                preco
+                preco,
+                sku:numeroSku
             };
 
             const novoProduto = await Produto.create(produto);
@@ -27,7 +38,7 @@ module.exports = class produtoController{
                 tabela_db:"Produtos",
                 acao:"Criar",
                 registro_id:novoProduto.id,
-                detalhe:`Novo produto ${novoProduto.nome} foi criado`
+                detalhe:`Novo produto ${novoProduto.nome} foi criado com sku ${numeroSku}`
             });
 
             res.status(201).json({success:true, message: "Produto criado com sucesso" ,data: novoProduto});
@@ -37,6 +48,53 @@ module.exports = class produtoController{
             console.log(err);
             res.status(500).json({success:false, message: "Erro interno no servidor"});
 
+        }
+    }
+
+    static async criarProdutoEmMassa(req,res){
+        try {
+            
+            const {listaProdutos} = req.body;
+
+            if(listaProdutos.length == 0){
+                res.status(400).json({success:false, message:"Favor adicionar os produtos a lista"});
+            };
+
+            const ultimoProdutoCriado = await Produto.findOne({
+                order: [['sku', 'DESC']],
+            });
+
+            let numeroSku = 100000;
+
+            if(ultimoProdutoCriado){
+                numeroSku = ultimoProdutoCriado.sku + 1;
+            };
+
+            const produtosComSku = listaProdutos.map((produto, index) => {
+                return {
+                    ...produto,
+                    sku: numeroSku + index
+                };
+            });
+
+            const produtosCriados = await Produto.bulkCreate(produtosComSku);
+
+            await Promise.all(
+                produtosCriados.map(produto => 
+                    registrarLog({
+                        tabela_db: "Produtos",
+                        acao: "Criar",
+                        registro_id: produto.id,
+                        detalhe: `Novo produto ${produto.nome} foi criado com sku ${produto.sku}`
+                    })
+                )
+            );
+
+            res.status(200).json({success:true, message:"Adição em massa realizada", data:produtosCriados});
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({success:false, message:"Erro no server"});
         }
     }
 

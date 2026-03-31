@@ -7,6 +7,11 @@ const Produto = db.define('produto', {
         type: DataTypes.STRING,
         required: true
     },
+    sku:{
+        type: DataTypes.INTEGER,
+        required:true,
+        unique:true,
+    },
     preco: {
         type: DataTypes.DOUBLE,
         required: true,
