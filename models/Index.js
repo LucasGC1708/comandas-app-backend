@@ -3,6 +3,7 @@ const Cliente = require('./Cliente');
 const Pedido = require('./Pedido');
 const Item = require('./Item');
 const OrdemVenda = require('./OrdemVenda');
+const Categoria = require('./Categoria');
 const Log = require('./Log');
 
 //RELAÇÕES ITEM 
@@ -30,6 +31,11 @@ Cliente.hasMany(Pedido,{
     as:'pedidos'
 });
 
+Cliente.belongsTo(Categoria,{
+    foreignKey:"categoria_id",
+    as:'categoria',
+});
+
 //RELAÇÕES PEDIDO
 Pedido.belongsTo(Cliente,{
     foreignKey:"cliente_id",
@@ -55,6 +61,12 @@ OrdemVenda.belongsTo(Pedido, {
     onDelete: 'CASCADE'
 });
 
+//RELAÇÕES CATEGORIAS
+Categoria.hasMany(Cliente,{
+    foreignKey:"categoria_id",
+    as:'clientes',
+});
 
 
-module.exports = {Cliente, Produto, Item, Pedido, OrdemVenda, Log};
+
+module.exports = {Cliente, Categoria, Produto, Item, Pedido, OrdemVenda, Log};

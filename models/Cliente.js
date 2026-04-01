@@ -15,6 +15,10 @@ const Cliente = db.define('cliente',{
         type: DataTypes.STRING,
         required:true
     },
+    categoria_id:{
+        type: DataTypes.INTEGER,
+        required:true,
+    },
     ativo:{
         type: DataTypes.BOOLEAN,
         required: true,

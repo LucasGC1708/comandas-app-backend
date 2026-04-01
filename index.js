@@ -19,12 +19,13 @@ app.use(
 );
 
 //MODELS DB
-const {Cliente, Produto, Item, Pedido, OrdemVenda} = require('./models/Index');
+const {Cliente, Categoria, Produto, Item, Pedido, OrdemVenda} = require('./models/Index');
 // const Cliente = require('./models/Cliente');
 // const Produto = require('./models/Produto');
 
 //ROUTES
 const clienteRoutes = require('./routes/clienteRoutes');
+const categoriaRoutes = require('./routes/categoriaRoutes')
 const produtoRoutes = require('./routes/produtoRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const pedidoRoutes = require('./routes/pedidoRoutes');
@@ -32,6 +33,7 @@ const ordemVendaRoutes = require('./routes/ordemVendaRoutes');
 
 //USES
 app.use('/clientes', clienteRoutes);
+app.use('/categorias', categoriaRoutes);
 app.use('/produtos', produtoRoutes);
 app.use('/itens', itemRoutes);
 app.use('/pedidos', pedidoRoutes);
