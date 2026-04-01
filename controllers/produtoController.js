@@ -83,7 +83,7 @@ module.exports = class produtoController{
                 produtosCriados.map(produto => 
                     registrarLog({
                         tabela_db: "Produtos",
-                        acao: "Criar",
+                        acao: "Criar em Massa",
                         registro_id: produto.id,
                         detalhe: `Novo produto ${produto.nome} foi criado com sku ${produto.sku}`
                     })
