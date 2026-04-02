@@ -8,6 +8,7 @@ router.get('/listar', categoriaController.listarCategorias);
 
 //ROTAS POST
 router.post('/criar', categoriaController.criarCategoria);
+router.post('/criarEmMassa', categoriaController.criarCategoriasEmMassa);
 
 //ROTAS PUT
 

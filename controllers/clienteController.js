@@ -1,98 +1,139 @@
-const Cliente = require('../models/Cliente');
-const registrarLog = require('../utils/log');
+const { Cliente, Categoria } = require("../models/Index");
+const registrarLog = require("../utils/log");
 
-module.exports = class clienteController{
+module.exports = class clienteController {
+  static async buscaClientePorCPF(req, res) {
+    try {
+      const dadosCliente = await Cliente.findOne({
+        where: { cpf: req.params.cpf, ativo: true },
+      });
 
-    static async buscaClientePorCPF(req, res){
-        try {
-            
-            const dadosCliente = await Cliente.findOne({where:{cpf: req.params.cpf, ativo:true}});
+      if (!dadosCliente) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Cliente não foi encontrado" });
+      }
 
-            if(!dadosCliente){
-                return res.status(404).json({success: false, message: "Cliente não foi encontrado"});
-            }
-
-            res.status(200).json({success:true, message:"Cliente encontrado" , data:dadosCliente});
-
-        } catch (err) {
-            console.log(err);
-            res.status(500).json({success:false, message:"Erro interno no servidor"})
-
-        }
+      res
+        .status(200)
+        .json({
+          success: true,
+          message: "Cliente encontrado",
+          data: dadosCliente,
+        });
+    } catch (err) {
+      console.log(err);
+      res
+        .status(500)
+        .json({ success: false, message: "Erro interno no servidor" });
     }
+  }
 
-    static async criarCliente(req, res){
+  static async criarCliente(req, res) {
+    try {
+      const { nome, email, cpf } = req.body;
 
-        try {
+      if (!nome || !email || !cpf) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Favor preencher todos os campos",
+            nome,
+            cpf,
+            email,
+          });
+      }
 
-            const {nome, email, cpf} = req.body;
+      if (cpf.length != 11) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Necessário que cpf tenha 11 caracteres",
+            nome,
+            cpf,
+            email,
+          });
+      }
 
-            if(!nome || !email || !cpf){
-                return res.status(400).json({success:false, message: "Favor preencher todos os campos", nome, cpf, email});
-            }
+      const clienteCadastrado = await Cliente.findOne({ where: { cpf } });
 
-            if(cpf.length != 11){
-                return res.status(400).json({success:false, message: "Necessário que cpf tenha 11 caracteres", nome, cpf, email});
-            }
+      if (clienteCadastrado) {
+        return res
+          .status(409)
+          .json({
+            success: false,
+            message: "Este cpf já está cadastrado",
+            nome,
+            cpf,
+            email,
+          });
+      }
 
-            const clienteCadastrado = await Cliente.findOne({where:{cpf}});
+      const cliente = {
+        nome,
+        email,
+        cpf,
+      };
 
-            if(clienteCadastrado){
-                return res.status(409).json({success:false, message: "Este cpf já está cadastrado", nome, cpf, email});
-            }
+      const novoCliente = await Cliente.create(cliente);
 
-            const cliente = {
-                nome,
-                email,
-                cpf
-            }
+      await registrarLog({
+        tabela_db: "Clientes",
+        acao: "Criar",
+        registro_id: novoCliente.id,
+        detalhe: `Novo cliente ${novoCliente.nome} adicionado`,
+      });
 
-            const novoCliente = await Cliente.create(cliente);
-
-            await registrarLog({
-                tabela_db:"Clientes",
-                acao:"Criar",
-                registro_id:novoCliente.id,
-                detalhe:`Novo cliente ${novoCliente.nome} adicionado`
-            });
-
-            res.status(201).json({success:true, message: "Cliente criado com sucesso", data: novoCliente});
-
-        } catch (err) {
-            
-            console.log(err);
-            res.status(500).json({success:false, message:"Erro interno no servidor"})
-
-        }
-
+      res
+        .status(201)
+        .json({
+          success: true,
+          message: "Cliente criado com sucesso",
+          data: novoCliente,
+        });
+    } catch (err) {
+      console.log(err);
+      res
+        .status(500)
+        .json({ success: false, message: "Erro interno no servidor" });
     }
+  }
 
-    static async desativaCliente(req,res){
-        try {
-            
-            const {id} = req.body;
+  static async desativaCliente(req, res) {
+    try {
+      const { id } = req.body;
 
-            const pedidoCadastrado = await Cliente.findOne({where: {id}});
+      const pedidoCadastrado = await Cliente.findOne({ where: { id } });
 
-            if(!pedidoCadastrado){
-                return res.status(404).json({success:false, message:"Cliente não foi encontrado"});
-            }
+      if (!pedidoCadastrado) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Cliente não foi encontrado" });
+      }
 
-            const desativacaoCliente = await pedidoCadastrado.update({ativo:false});
+      const desativacaoCliente = await pedidoCadastrado.update({
+        ativo: false,
+      });
 
-            await registrarLog({
-                tabela_db:"Clientes",
-                acao:"Desativar",
-                registro_id:desativacaoCliente.id,
-                detalhe:`Cliente ${desativacaoCliente.nome} foi desativado`
-            });
+      await registrarLog({
+        tabela_db: "Clientes",
+        acao: "Desativar",
+        registro_id: desativacaoCliente.id,
+        detalhe: `Cliente ${desativacaoCliente.nome} foi desativado`,
+      });
 
-            res.status(200).json({success: true, message:"Cliente foi desativado", data:desativacaoCliente});
-
-        } catch (err) {
-            console.log(err);
-            res.status(500).json({success:false, message:"Erro no servidor"});
-        }
+      res
+        .status(200)
+        .json({
+          success: true,
+          message: "Cliente foi desativado",
+          data: desativacaoCliente,
+        });
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ success: false, message: "Erro no servidor" });
     }
-
-}
+  }
+};

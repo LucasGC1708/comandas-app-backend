@@ -19,6 +19,11 @@ const Cliente = db.define('cliente',{
         type: DataTypes.INTEGER,
         required:true,
     },
+    pontos:{
+        type:DataTypes.DECIMAL,
+        required:true,
+        defaultValue:0
+    },
     ativo:{
         type: DataTypes.BOOLEAN,
         required: true,

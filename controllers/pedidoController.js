@@ -1,170 +1,229 @@
-const {Pedido, Cliente, OrdemVenda} = require('../models/Index');
-const registrarLog = require('../utils/log');
+const { Pedido, Cliente, OrdemVenda } = require("../models/Index");
+const registrarLog = require("../utils/log");
 
-module.exports = class pedidoController{
+module.exports = class pedidoController {
+  static async criarPedido(req, res) {
+    try {
+      const { cpf } = req.body;
 
-    static async criarPedido(req,res){
-        try {
-            
-            const {cpf} = req.body;
+      if (!cpf) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Favor informar o cliente do pedido",
+          });
+      }
 
-            if(!cpf){
-                return res.status(400).json({success:false, message:"Favor informar o cliente do pedido"});
-            }
+      const cliente = await Cliente.findOne({ where: { cpf: cpf }, raw: true });
 
-            const cliente = await Cliente.findOne({where:{cpf:cpf}, raw:true});
+      if (!cliente) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Cliente não encontrado" });
+      }
 
-            if(!cliente){
-                return res.status(404).json({success:false, message: "Cliente não encontrado"});
-            }
-            
-            const pedidoPendente = await Pedido.findAll({
-                where:{cliente_id:cliente.id, status:"pendente"},
-                attributes:{exclude:['createdAt', 'updatedAt']}
-            });
+      const pedidoPendente = await Pedido.findAll({
+        where: { cliente_id: cliente.id, status: "pendente" },
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
 
-            if(pedidoPendente.length > 0){
-                return res.status(400).json({success:false, message:"O cliente em questão tem um pedido pendente em seu nome", pendente:pedidoPendente});
-            }
+      if (pedidoPendente.length > 0) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "O cliente em questão tem um pedido pendente em seu nome",
+            pendente: pedidoPendente,
+          });
+      }
 
-            const ultimoPedidoCriado = await Pedido.findOne({
-                order: [['createdAt', 'DESC']],
-            });
+      const ultimoPedidoCriado = await Pedido.findOne({
+        order: [["createdAt", "DESC"]],
+      });
 
-            numeroPedido = 1;
+      numeroPedido = 1;
 
-            if (ultimoPedidoCriado) {
-                numeroPedido = numeroPedido + ultimoPedidoCriado.numero_pedido;
-            }
+      if (ultimoPedidoCriado) {
+        numeroPedido = numeroPedido + ultimoPedidoCriado.numero_pedido;
+      }
 
-            const pedido = {
-                cliente_id:cliente.id,
-                numero_pedido:numeroPedido,
-            }
+      const pedido = {
+        cliente_id: cliente.id,
+        numero_pedido: numeroPedido,
+      };
 
-            const novoPedido = await Pedido.create(pedido);
+      const novoPedido = await Pedido.create(pedido);
 
-            await registrarLog({
-                tabela_db:"Pedidos",
-                acao:"Criar",
-                registro_id:novoPedido.id,
-                detalhe:`Pedido criado com sucesso ${novoPedido.numero_pedido} para o cliente ${novoPedido.cliente_id}`
-            });
+      await registrarLog({
+        tabela_db: "Pedidos",
+        acao: "Criar",
+        registro_id: novoPedido.id,
+        detalhe: `Pedido criado com sucesso ${novoPedido.numero_pedido} para o cliente ${novoPedido.cliente_id}`,
+      });
 
-            res.status(201).json({success:true, message:"Pedido criado com sucesso", data:novoPedido});
-        } catch (err) {
-            console.log(err);
-            res.status(500).json({success:false, message:"Erro no servidor"});
-        }
+      res
+        .status(201)
+        .json({
+          success: true,
+          message: "Pedido criado com sucesso",
+          data: novoPedido,
+        });
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ success: false, message: "Erro no servidor" });
     }
+  }
 
-    static async buscarPedido(req, res){
+  static async buscarPedido(req, res) {
+    try {
+      const id = req.params.id;
 
-        try {
-            const id = req.params.id;
+      const pedido = await Pedido.findOne({
+        where: { id },
+        include: [
+          {
+            association: "itens",
+            attributes: ["quantidade", "valorTotal", "id"],
+            include: [
+              {
+                association: "produto",
+                attributes: ["id", "nome", "preco"],
+              },
+            ],
+          },
+        ],
+      });
 
-            const pedido = await Pedido.findOne({where:{id},include:[{
-                    association:'itens',
-                    attributes:['quantidade','valorTotal', 'id'],
-                    include:[{
-                        association: 'produto',
-                        attributes: ['id', 'nome', 'preco']
-                    }]
-                }]
-            });
+      if (!pedido) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Pedido não foi encontrado" });
+      }
 
-            if(!pedido){
-                return res.status(404).json({success:false, message: "Pedido não foi encontrado"});
-            }
-
-            res.status(200).json({success:true, message:"Pedido encontrado com sucesso", data: pedido});    
-        } catch (err) {
-            console.log(err);
-            res.status(500).json({success:false, message:"Erro no servidor"});
-        }
-        
+      res
+        .status(200)
+        .json({
+          success: true,
+          message: "Pedido encontrado com sucesso",
+          data: pedido,
+        });
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ success: false, message: "Erro no servidor" });
     }
+  }
 
-    static async finalizarPedido(req, res){
-        try {
-            
-            const {id} = req.params;
+  static async finalizarPedido(req, res) {
+    try {
+      const { id } = req.params;
 
-            const pedidoCadastrado = await Pedido.findOne({where:{id}});
+      const pedidoCadastrado = await Pedido.findOne({ where: { id } });
 
-            if(!pedidoCadastrado){
-                return res.status(404).json({success:false, message:"Pedido não foi encontrado"});
-            }
+      if (!pedidoCadastrado) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Pedido não foi encontrado" });
+      }
 
-            if(pedidoCadastrado.status === "finalizado"){
-                return res.status(400).json({success:false, message:"Pedido já foi finalizado"});
-            }
+      if (pedidoCadastrado.status === "finalizado") {
+        return res
+          .status(400)
+          .json({ success: false, message: "Pedido já foi finalizado" });
+      }
 
-            const itens = await pedidoCadastrado.getItens();
+      const itens = await pedidoCadastrado.getItens();
 
-            if(itens.length === 0){
-                return res.status(400).json({success:false, message:"Pedido não possui itens"});
-            }
+      if (itens.length === 0) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Pedido não possui itens" });
+      }
 
-            const finalizacaoPedido = await pedidoCadastrado.update({status: "finalizado"});
+      const finalizacaoPedido = await pedidoCadastrado.update({
+        status: "finalizado",
+      });
 
-            await registrarLog({
-                tabela_db:"Pedidos",
-                acao:"Finalizado",
-                registro_id:finalizacaoPedido.id,
-                detalhe:`Pedido ${finalizacaoPedido.id} foi finalizado`
-            });
+      await registrarLog({
+        tabela_db: "Pedidos",
+        acao: "Finalizado",
+        registro_id: finalizacaoPedido.id,
+        detalhe: `Pedido ${finalizacaoPedido.id} foi finalizado`,
+      });
 
-            await OrdemVenda.create({
-                pedido_id: pedidoCadastrado.id
-            });
+      await OrdemVenda.create({
+        pedido_id: pedidoCadastrado.id,
+      });
 
-            await registrarLog({
-                tabela_db:"Ordem_Vendas",
-                acao:"Criada",
-                registro_id:OrdemVenda.id,
-                detalhe:`Ordem ${OrdemVenda.id} foi criada através do pedido ${OrdemVenda.pedido_id}`
-            });
+      await registrarLog({
+        tabela_db: "Ordem_Vendas",
+        acao: "Criada",
+        registro_id: OrdemVenda.id,
+        detalhe: `Ordem ${OrdemVenda.id} foi criada através do pedido ${OrdemVenda.pedido_id}`,
+      });
 
-            res.status(200).json({success:true, message:"Pedido finalizado com sucesso", data: finalizacaoPedido});
-
-        } catch (err) {
-            console.log(err);
-            res.status(500).json({success:false, message:"Erro no servidor"});
-        }
+      res
+        .status(200)
+        .json({
+          success: true,
+          message: "Pedido finalizado com sucesso",
+          data: finalizacaoPedido,
+        });
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ success: false, message: "Erro no servidor" });
     }
+  }
 
-    static async apagarPedido(req, res){
-        try {
-            
-            const {id} = req.body;
+  static async apagarPedido(req, res) {
+    try {
+      const { id } = req.body;
 
-            const pedidoCadastrado = await Pedido.findOne({where:{id}});
+      const pedidoCadastrado = await Pedido.findOne({ where: { id } });
 
-            if(!pedidoCadastrado){
-                return res.status(404).json({success:false, message:"Pedido não foi encontrado para a exclusão"});
-            }
+      if (!pedidoCadastrado) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+            message: "Pedido não foi encontrado para a exclusão",
+          });
+      }
 
-            const ordemDePedido = await OrdemVenda.findOne({where:{pedido_id:pedidoCadastrado.id, status:"entregue"},raw:true});
+      const ordemDePedido = await OrdemVenda.findOne({
+        where: { pedido_id: pedidoCadastrado.id, status: "entregue" },
+        raw: true,
+      });
 
-            if(ordemDePedido){
-                return res.status(400).json({success:false, message:"Este pedido não pode mais ser excluído pois sua ordem de venda já foi finalizada"});
-            }
+      if (ordemDePedido) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "Este pedido não pode mais ser excluído pois sua ordem de venda já foi finalizada",
+          });
+      }
 
-            const exclusaoPedido = await pedidoCadastrado.destroy();
+      const exclusaoPedido = await pedidoCadastrado.destroy();
 
-            await registrarLog({
-                tabela_db:"Pedidos",
-                acao:"Excluir",
-                registro_id:exclusaoPedido.id,
-                detalhe:`Exclusão de pedido ${exclusaoPedido.id} realizada`
-            });
+      await registrarLog({
+        tabela_db: "Pedidos",
+        acao: "Excluir",
+        registro_id: exclusaoPedido.id,
+        detalhe: `Exclusão de pedido ${exclusaoPedido.id} realizada`,
+      });
 
-            res.status(200).json({success:true, message:"Pedido excluído com sucesso", data:exclusaoPedido});
-
-        } catch (err) {
-            console.log(err);
-            res.status(500).json({success:false, message:"Erro no servidor"});
-        }
+      res
+        .status(200)
+        .json({
+          success: true,
+          message: "Pedido excluído com sucesso",
+          data: exclusaoPedido,
+        });
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ success: false, message: "Erro no servidor" });
     }
-}
+  }
+};
