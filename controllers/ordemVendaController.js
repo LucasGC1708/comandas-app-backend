@@ -1,4 +1,4 @@
-const { OrdemVenda, Pedido, Cliente } = require("../models/Index");
+const { OrdemVenda, Pedido, Cliente,  } = require("../models/Index");
 const registrarLog = require("../utils/log");
 
 module.exports = class ordemVendaController {
