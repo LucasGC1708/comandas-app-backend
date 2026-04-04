@@ -154,15 +154,15 @@ module.exports = class pedidoController {
         detalhe: `Pedido ${finalizacaoPedido.id} foi finalizado`,
       });
 
-      await OrdemVenda.create({
+      const novaOrdemVenda = await OrdemVenda.create({
         pedido_id: pedidoCadastrado.id,
       });
 
       await registrarLog({
         tabela_db: "Ordem_Vendas",
         acao: "Criada",
-        registro_id: OrdemVenda.id,
-        detalhe: `Ordem ${OrdemVenda.id} foi criada através do pedido ${OrdemVenda.pedido_id}`,
+        registro_id: novaOrdemVenda.id,
+        detalhe: `Ordem ${novaOrdemVenda.id} foi criada através do pedido ${novaOrdemVenda.pedido_id}`,
       });
 
       res
