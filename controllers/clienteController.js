@@ -6,6 +6,10 @@ module.exports = class clienteController {
     try {
       const dadosCliente = await Cliente.findOne({
         where: { cpf: req.params.cpf, ativo: true },
+        include:[{
+          association:"categoria",
+          attributes:["id", "nome", "desconto", "pontos_necessarios"]
+        }]
       });
 
       if (!dadosCliente) {
@@ -71,10 +75,17 @@ module.exports = class clienteController {
           });
       }
 
+      const categoriaPadrao = await Categoria.findOne({order:[["pontos_necessarios", "DESC"]]});
+
+      if(!categoriaPadrao){
+        return res.status(400).json({success:false, message:"Nenhuma categoria cadastrada no sistema"});
+      }
+
       const cliente = {
         nome,
         email,
         cpf,
+        categoria_id:categoriaPadrao.id
       };
 
       const novoCliente = await Cliente.create(cliente);

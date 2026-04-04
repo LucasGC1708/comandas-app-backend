@@ -20,7 +20,7 @@ const Cliente = db.define('cliente',{
         required:true,
     },
     pontos:{
-        type:DataTypes.DECIMAL,
+        type:DataTypes.DOUBLE,
         required:true,
         defaultValue:0
     },

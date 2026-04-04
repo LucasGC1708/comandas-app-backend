@@ -1,4 +1,4 @@
-const { OrdemVenda, Pedido } = require("../models/Index");
+const { OrdemVenda, Pedido, Cliente } = require("../models/Index");
 const registrarLog = require("../utils/log");
 
 module.exports = class ordemVendaController {
@@ -7,6 +7,10 @@ module.exports = class ordemVendaController {
       const ordens = await OrdemVenda.findAll({
         raw: true,
         attributes: { exclude: ["createdAt", "updatedAt"] },
+        include:{
+          association:"pedido",
+          
+        }
       });
 
       if (ordens.length == 0) {
@@ -58,6 +62,14 @@ module.exports = class ordemVendaController {
           });
       }
 
+      const clienteCadastrado = await Cliente.findOne({where:{id:dadosPedido.cliente_id}});
+
+      const pontosAcumulados = clienteCadastrado.pontos + dadosPedido.pontos_calculados;
+
+      if(!clienteCadastrado){
+        res.status(400).json({success:false, message:"Cliente não foi encontrado"});
+      }
+
       const atualizacaoOrdemVenda = await dadosOrdemVenda.update({
         status: "entregue",
       });
@@ -67,6 +79,15 @@ module.exports = class ordemVendaController {
         acao: "Finalizada",
         registro_id: atualizacaoOrdemVenda.id,
         detalhe: `Ordem de venda ${atualizacaoOrdemVenda.id} foi finalizada`,
+      });
+
+      const clienteAtualizado = await clienteCadastrado.update({pontos:pontosAcumulados});
+
+      await registrarLog({
+        tabela_db: "Cliente",
+        acao: "Pontos adicionados",
+        registro_id: clienteAtualizado.id,
+        detalhe: `Pontos de cliente ${clienteAtualizado.nome} foi atualizada através do pedido ${atualizacaoOrdemVenda.numero_pedido}`,
       });
 
       res

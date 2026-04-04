@@ -10,7 +10,6 @@ const Pedido = db.define('pedido', {
     numero_pedido:{
         type: DataTypes.INTEGER,
         required:true,
-        unique:true,
     },
     status: {
         type: DataTypes.ENUM('pendente', 'aguardando_pagamento', 'finalizado'),
@@ -22,6 +21,11 @@ const Pedido = db.define('pedido', {
         required: true,
         defaultValue:0.00
     },
+    pontos_calculados:{
+        type:DataTypes.DOUBLE,
+        required:true,
+        defaultValue:0
+    }
 });
 
 module.exports = Pedido;

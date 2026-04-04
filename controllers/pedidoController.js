@@ -42,7 +42,7 @@ module.exports = class pedidoController {
         order: [["createdAt", "DESC"]],
       });
 
-      numeroPedido = 1;
+      const numeroPedido = 1;
 
       if (ultimoPedidoCriado) {
         numeroPedido = numeroPedido + ultimoPedidoCriado.numero_pedido;
@@ -140,8 +140,11 @@ module.exports = class pedidoController {
           .json({ success: false, message: "Pedido não possui itens" });
       }
 
+      const calculoPontos = pedidoCadastrado.valorPedido/10;
+
       const finalizacaoPedido = await pedidoCadastrado.update({
         status: "finalizado",
+        pontos_calculados:calculoPontos
       });
 
       await registrarLog({

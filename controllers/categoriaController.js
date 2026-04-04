@@ -23,7 +23,7 @@ module.exports = class categoriaController {
       res.status(500).message({ success: false, message: "Erro no servidor" });
     }
   }
-
+  
   //AÇÕES DE CRIAÇÃO
   static async criarCategoria(req, res) {
     try {

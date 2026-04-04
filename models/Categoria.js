@@ -8,11 +8,11 @@ const Categoria = db.define('categoria',{
         required: true,
     },
     desconto:{
-        type:DataTypes.DECIMAL,
+        type:DataTypes.DOUBLE,
         required:true,
     },
     pontos_necessarios:{
-        type:DataTypes.DECIMAL,
+        type:DataTypes.DOUBLE,
         required: true,
     },
     ativo:{
