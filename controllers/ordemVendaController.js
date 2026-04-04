@@ -1,4 +1,5 @@
-const { OrdemVenda, Pedido, Cliente,  } = require("../models/Index");
+const { Op } = require("sequelize");
+const { OrdemVenda, Pedido, Cliente, Categoria } = require("../models/Index");
 const registrarLog = require("../utils/log");
 
 module.exports = class ordemVendaController {
@@ -7,10 +8,9 @@ module.exports = class ordemVendaController {
       const ordens = await OrdemVenda.findAll({
         raw: true,
         attributes: { exclude: ["createdAt", "updatedAt"] },
-        include:{
-          association:"pedido",
-          
-        }
+        include: {
+          association: "pedido",
+        },
       });
 
       if (ordens.length == 0) {
@@ -19,13 +19,11 @@ module.exports = class ordemVendaController {
           .json({ success: false, message: "Nenhum pedido encontrado" });
       }
 
-      res
-        .status(200)
-        .json({
-          success: true,
-          message: "Ordens de venda encontrados",
-          data: ordens,
-        });
+      res.status(200).json({
+        success: true,
+        message: "Ordens de venda encontrados",
+        data: ordens,
+      });
     } catch (err) {
       console.log(err);
       res.status(500).json({ success: false, message: "Erro no servidor" });
@@ -41,12 +39,10 @@ module.exports = class ordemVendaController {
       });
 
       if (!dadosOrdemVenda) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message: "Ordem de venda não encontrada ou já entregue",
-          });
+        return res.status(404).json({
+          success: false,
+          message: "Ordem de venda não encontrada ou já entregue",
+        });
       }
 
       const dadosPedido = await Pedido.findOne({
@@ -54,21 +50,38 @@ module.exports = class ordemVendaController {
       });
 
       if (!dadosPedido) {
+        return res.status(404).json({
+          success: false,
+          message: "Pedido relacionado a Ordem de venda não encontrado",
+        });
+      }
+
+      const clienteCadastrado = await Cliente.findOne({
+        where: { id: dadosPedido.cliente_id },
+      });
+
+      if (!clienteCadastrado) {
         return res
-          .status(404)
-          .json({
-            success: false,
-            message: "Pedido relacionado a Ordem de venda não encontrado",
-          });
+          .status(400)
+          .json({ success: false, message: "Cliente não foi encontrado" });
       }
 
-      const clienteCadastrado = await Cliente.findOne({where:{id:dadosPedido.cliente_id}});
+      const pontosAcumulados = 
+        Number(clienteCadastrado.pontos) + Number(dadosPedido.pontos_calculados)
+      ;
 
-      const pontosAcumulados = clienteCadastrado.pontos + dadosPedido.pontos_calculados;
+      const novaCategoria = await Categoria.findOne({
+        where: {
+          pontos_necessarios: {
+            [Op.lte]: pontosAcumulados,
+          },
+        },
+        order: [["pontos_necessarios", "DESC"]],
+      });
 
-      if(!clienteCadastrado){
-        res.status(400).json({success:false, message:"Cliente não foi encontrado"});
-      }
+      const novaCategoriaId = novaCategoria
+        ? novaCategoria.id
+        : clienteCadastrado.categoria_id;
 
       const atualizacaoOrdemVenda = await dadosOrdemVenda.update({
         status: "entregue",
@@ -81,7 +94,10 @@ module.exports = class ordemVendaController {
         detalhe: `Ordem de venda ${atualizacaoOrdemVenda.id} foi finalizada`,
       });
 
-      const clienteAtualizado = await clienteCadastrado.update({pontos:pontosAcumulados});
+      const clienteAtualizado = await clienteCadastrado.update({
+        pontos: pontosAcumulados,
+        categoria_id: novaCategoriaId,
+      });
 
       await registrarLog({
         tabela_db: "Cliente",
@@ -90,13 +106,11 @@ module.exports = class ordemVendaController {
         detalhe: `Pontos de cliente ${clienteAtualizado.nome} foi atualizada através do pedido ${atualizacaoOrdemVenda.numero_pedido}`,
       });
 
-      res
-        .status(200)
-        .json({
-          success: true,
-          message: "Ordem de venda finalizada",
-          data: atualizacaoOrdemVenda,
-        });
+      res.status(200).json({
+        success: true,
+        message: "Ordem de venda finalizada",
+        data: atualizacaoOrdemVenda,
+      });
     } catch (err) {
       console.log(err);
       res.status(500).json({ success: false, message: "erro no servidor" });

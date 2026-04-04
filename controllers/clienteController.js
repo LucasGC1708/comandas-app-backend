@@ -75,7 +75,7 @@ module.exports = class clienteController {
           });
       }
 
-      const categoriaPadrao = await Categoria.findOne({order:[["pontos_necessarios", "DESC"]]});
+      const categoriaPadrao = await Categoria.findOne({order:[["pontos_necessarios", "ASC"]]});
 
       if(!categoriaPadrao){
         return res.status(400).json({success:false, message:"Nenhuma categoria cadastrada no sistema"});
