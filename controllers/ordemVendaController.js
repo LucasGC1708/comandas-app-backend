@@ -21,7 +21,7 @@ module.exports = class ordemVendaController {
 
       res.status(200).json({
         success: true,
-        message: "Ordens de venda encontrados",
+        message: "Ordens de venda encontradas",
         data: ordens,
       });
     } catch (err) {

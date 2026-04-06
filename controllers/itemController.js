@@ -1,4 +1,4 @@
-const { Item, Produto, Pedido } = require("../models/Index");
+const { Item, Produto, Pedido, Categoria, Cliente } = require("../models/Index");
 const { formataPreco } = require("../utils/helpers");
 const registrarLog = require("../utils/log");
 const db = require("../db/conn");
@@ -36,6 +36,30 @@ module.exports = class itemController {
           .json({ success: false, message: "Pedido já foi finalizado" });
       }
 
+      const cliente = await Cliente.findOne({
+        where:{id:pedido.cliente_id},
+        transaction:t
+      });
+
+      if(!cliente){
+        await t.rollback();
+        return res
+          .status(404)
+          .json({success:false, message:"Cliente não encontrado"});
+      }
+
+      const categoria = await Categoria.findOne({
+        where:{id:cliente.categoria_id},
+        transaction:t
+      });
+
+      if(!categoria){
+        await t.rollback();
+        return res
+          .status(404)
+          .json({success:false, message:"Cliente não possuí uma categoria valida"});
+      }
+
       const produto = await Produto.findOne({
         where: { id: produto_id },
         transaction: t,
@@ -48,7 +72,11 @@ module.exports = class itemController {
           .json({ success: false, message: "Produto não encontrando" });
       }
 
-      const valorTotal = Number((produto.preco * quantidade).toFixed(2));
+      const valorBruto = Number(produto.preco) * quantidade;
+
+      const valorComDesconto = valorBruto * (1 - Number(categoria.desconto) / 100);
+
+      const valorTotal = Number(valorComDesconto.toFixed(2));
 
       const item = {
         produto_id,
