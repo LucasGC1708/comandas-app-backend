@@ -48,7 +48,7 @@ module.exports = class itemController {
           .json({ success: false, message: "Produto não encontrando" });
       }
 
-      const valorTotal = formataPreco(produto.preco * quantidade);
+      const valorTotal = Number((produto.preco * quantidade).toFixed(2));
 
       const item = {
         produto_id,
