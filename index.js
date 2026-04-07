@@ -27,6 +27,7 @@ const {Cliente, Categoria, Produto, Item, Pedido, OrdemVenda} = require('./model
 const clienteRoutes = require('./routes/clienteRoutes');
 const categoriaRoutes = require('./routes/categoriaRoutes')
 const produtoRoutes = require('./routes/produtoRoutes');
+const estoqueRoutes = require('./routes/estoqueRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const pedidoRoutes = require('./routes/pedidoRoutes');
 const ordemVendaRoutes = require('./routes/ordemVendaRoutes');
@@ -35,6 +36,7 @@ const ordemVendaRoutes = require('./routes/ordemVendaRoutes');
 app.use('/clientes', clienteRoutes);
 app.use('/categorias', categoriaRoutes);
 app.use('/produtos', produtoRoutes);
+app.use('/estoque', estoqueRoutes)
 app.use('/itens', itemRoutes);
 app.use('/pedidos', pedidoRoutes);
 app.use('/ordemVenda', ordemVendaRoutes);
