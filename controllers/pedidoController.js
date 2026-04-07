@@ -178,6 +178,80 @@ module.exports = class pedidoController {
     }
   }
 
+  static async retrocederPedido(req, res){
+    try {
+      
+      const {id} = req.body;
+
+      if(!id){
+        return res
+          .status(400)
+          .json({success:false, message:"Favor informar o identificador único do pedido"});
+      }
+
+      const pedido = await Pedido.findOne({
+        where:{id}
+      });
+
+      if(!pedido){
+        return res
+          .status(404)
+          .json({success:false, message:"Pedido não foi encontrado para retroceder"});
+      };
+
+      if(pedido.status === "pendente"){
+        return res
+          .status(400)
+          .json({success:false, message:"Este pedido não avançou para poder ser retrocedido"});
+      }
+
+      const ordemVenda = await OrdemVenda.findOne({
+        where:{pedido_id:pedido.id}
+      });
+
+      if(!ordemVenda){
+        return res
+          .status(404)
+          .json({success:false, message:"Não foi encontrado a ordem de venda deste pedido"});
+      }
+
+      if(ordemVenda.status === "entregue"){
+        return res
+          .status(400)
+          .json({success:false, message:"Este pedido já teve sua ordem de venda entregue por este motivo não é possível mais retroceder"});
+      }
+
+      await ordemVenda.destroy();
+
+      await registrarLog({
+        tabela_db: "ordem_venda",
+        acao:"Excluir",
+        registro_id:ordemVenda.id,
+        detalhe:`A ordem de venda foi retirada pelo processo de retroceder do pedido ${pedido.numero_pedido}`
+      });
+
+      await pedido.update({
+        status:"pendente",
+        pontos_calculados:0.00
+      });
+
+      await registrarLog({
+        tabela_db: "pedidos",
+        acao:"Retroceder",
+        registro_id:pedido.id,
+        detalhe:`O pedido de numeração ${pedido.numero_pedido} foi retrocedido`
+      });
+
+      res
+        .status(200)
+        .json({success:true, message:"Sucesso no processo de retroceder o pedido", data:pedido});
+
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({success:false,message:"Erro no servidor"});
+    }
+  }
+
   static async apagarPedido(req, res) {
     try {
       const { id } = req.body;

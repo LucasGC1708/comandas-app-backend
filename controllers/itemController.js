@@ -1,4 +1,10 @@
-const { Item, Produto, Pedido, Categoria, Cliente } = require("../models/Index");
+const {
+  Item,
+  Produto,
+  Pedido,
+  Categoria,
+  Cliente,
+} = require("../models/Index");
 const { formataPreco } = require("../utils/helpers");
 const registrarLog = require("../utils/log");
 const db = require("../db/conn");
@@ -7,10 +13,10 @@ module.exports = class itemController {
   static async criarItem(req, res) {
     const { produto_id, pedido_id, quantidade } = req.body;
 
-    if (!produto_id || !pedido_id || !quantidade) {
+    if (!produto_id || !pedido_id || quantidade <= 0) {
       return res
         .status(400)
-        .json({ success: false, message: "Favor precheender todos os campos" });
+        .json({ success: false, message: "Favor preencher todos os campos" });
     }
 
     const t = await db.transaction();
@@ -37,27 +43,30 @@ module.exports = class itemController {
       }
 
       const cliente = await Cliente.findOne({
-        where:{id:pedido.cliente_id},
-        transaction:t
+        where: { id: pedido.cliente_id },
+        transaction: t,
       });
 
-      if(!cliente){
+      if (!cliente) {
         await t.rollback();
         return res
           .status(404)
-          .json({success:false, message:"Cliente não encontrado"});
+          .json({ success: false, message: "Cliente não encontrado" });
       }
 
       const categoria = await Categoria.findOne({
-        where:{id:cliente.categoria_id},
-        transaction:t
+        where: { id: cliente.categoria_id },
+        transaction: t,
       });
 
-      if(!categoria){
+      if (!categoria) {
         await t.rollback();
         return res
           .status(404)
-          .json({success:false, message:"Cliente não possuí uma categoria valida"});
+          .json({
+            success: false,
+            message: "Cliente não possuí uma categoria valida",
+          });
       }
 
       const produto = await Produto.findOne({
@@ -69,7 +78,7 @@ module.exports = class itemController {
         await t.rollback();
         return res
           .status(404)
-          .json({ success: false, message: "Produto não encontrando" });
+          .json({ success: false, message: "Produto não encontrado" });
       }
 
       const valorBruto = Number(produto.preco) * quantidade;
@@ -78,36 +87,73 @@ module.exports = class itemController {
 
       const valorTotal = Number(valorComDesconto.toFixed(2));
 
-      const item = {
-        produto_id,
-        quantidade,
-        pedido_id,
-        valorTotal,
-      };
-
-      const novoItem = await Item.create(item, { transaction: t });
-
-      await pedido.increment("valorPedido", {
-        by: valorTotal,
+      const buscaItemDuplicado = await Item.findOne({
+        where: { produto_id: produto.id, pedido_id: pedido.id },
         transaction: t,
+        lock: t.LOCK.UPDATE
       });
 
-      await t.commit();
+      if (!buscaItemDuplicado) {
+        const item = {
+          produto_id,
+          quantidade,
+          pedido_id,
+          valorTotal,
+        };
 
-      await registrarLog({
-        tabela_db: "Itens",
-        acao: "Criar",
-        registro_id: novoItem.id,
-        detalhe: `Novo Item foi criado para o pedido ${novoItem.pedido_id}`,
-      });
+        const novoItem = await Item.create(item, { transaction: t });
 
-      return res
-        .status(201)
-        .json({
+        await pedido.increment("valorPedido", {
+          by: valorTotal,
+          transaction: t,
+        });
+
+        await t.commit();
+
+        await registrarLog({
+          tabela_db: "Itens",
+          acao: "Criar",
+          registro_id: novoItem.id,
+          detalhe: `Novo Item foi criado para o pedido ${novoItem.pedido_id}`,
+        });
+
+        return res.status(201).json({
           success: true,
           message: "Item criado com sucesso",
           data: novoItem,
         });
+      } else {
+
+        const novaQuantidade = Number(buscaItemDuplicado.quantidade) + Number(quantidade);
+
+        const novoValor = Number((Number(buscaItemDuplicado.valorTotal) + Number(valorTotal)).toFixed(2));
+
+        await buscaItemDuplicado.update(
+          {valorTotal:novoValor,quantidade:novaQuantidade},
+          { transaction: t }
+        );
+
+        await pedido.increment("valorPedido", {
+          by: valorTotal,
+          transaction: t,
+        });
+
+        await t.commit();
+
+        await registrarLog({
+          tabela_db: "Itens",
+          acao: "Editar",
+          registro_id: buscaItemDuplicado.id,
+          detalhe: `O produto já está adicionado em outro item foi realizado o incremento para o item em questão`,
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: "Item editado com sucesso",
+          data: buscaItemDuplicado,
+        });
+
+      }
     } catch (err) {
       if (!t.finished) {
         await t.rollback();
@@ -137,13 +183,11 @@ module.exports = class itemController {
           .json({ success: false, message: "Item não foi encontrado" });
       }
 
-      res
-        .status(200)
-        .json({
-          success: true,
-          message: "Produto encontrado com sucesso",
-          data: item,
-        });
+      res.status(200).json({
+        success: true,
+        message: "Produto encontrado com sucesso",
+        data: item,
+      });
     } catch (err) {
       console.log(err);
       res.status(500).json({ success: false, message: "Erro no servidor" });
@@ -235,13 +279,11 @@ module.exports = class itemController {
         detalhe: `Item foi editado para o pedido ${edicaoItem.pedido_id}`,
       });
 
-      return res
-        .status(201)
-        .json({
-          success: true,
-          message: "Item editado com sucesso",
-          data: edicaoItem,
-        });
+      return res.status(201).json({
+        success: true,
+        message: "Item editado com sucesso",
+        data: edicaoItem,
+      });
     } catch (err) {
       if (!t.finished) {
         await t.rollback();
@@ -278,12 +320,10 @@ module.exports = class itemController {
 
       if (itemCadastrado.pedido_id == null) {
         await t.rollback();
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Item não possui pedido para ser removido",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "Item não possui pedido para ser removido",
+        });
       }
 
       const pedidoCadastrado = await Pedido.findOne({
@@ -294,12 +334,10 @@ module.exports = class itemController {
 
       if (!pedidoCadastrado) {
         await t.rollback();
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Pedido associado ao item não encontrado ou finalizado",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "Pedido associado ao item não encontrado ou finalizado",
+        });
       }
 
       const deletarItem = await itemCadastrado.destroy({ transaction: t });
@@ -318,13 +356,11 @@ module.exports = class itemController {
         detalhe: `Remoção do item realizada no pedido ${deletarItem.pedido_id}`,
       });
 
-      return res
-        .status(200)
-        .json({
-          success: true,
-          message: "Item removido com sucesso",
-          data: deletarItem,
-        });
+      return res.status(200).json({
+        success: true,
+        message: "Item removido com sucesso",
+        data: deletarItem,
+      });
     } catch (err) {
       if (!t.finished) {
         await t.rollback();
