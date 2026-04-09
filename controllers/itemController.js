@@ -1,6 +1,7 @@
 const {
   Item,
   Produto,
+  Estoque,
   Pedido,
   Categoria,
   Cliente,
@@ -79,6 +80,25 @@ module.exports = class itemController {
         return res
           .status(404)
           .json({ success: false, message: "Produto não encontrado" });
+      }
+
+      const estoque = await Estoque.findOne({
+        where:{produto_id:produto.id},
+        transaction:t,
+      });
+
+      if(!estoque){
+        return res
+          .status(400)
+          .json({success:false, message:"Este produto não possui estoque cadastrado"});
+      };
+
+      const qtdReservado = Number(quantidade) + Number(estoque.quantidade_reservada);
+
+      if(qtdReservado > estoque.quantidade_disponivel){
+        return res
+          .status(400)
+          .json({success:false, message:"A quantidade solicitada ao item é superior que a disponivel em estoque"});
       }
 
       const valorBruto = Number(produto.preco) * quantidade;
