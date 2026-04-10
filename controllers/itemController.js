@@ -85,17 +85,20 @@ module.exports = class itemController {
       const estoque = await Estoque.findOne({
         where:{produto_id:produto.id},
         transaction:t,
+        lock: t.LOCK.UPDATE
       });
 
       if(!estoque){
+        await t.rollback();
         return res
           .status(400)
           .json({success:false, message:"Este produto não possui estoque cadastrado"});
       };
 
-      const qtdReservado = Number(quantidade) + Number(estoque.quantidade_reservada);
+      const qtdDisponivel = Number(estoque.quantidade_fisica) - Number(estoque.quantidade_reservada);
 
-      if(qtdReservado > estoque.quantidade_disponivel){
+      if(qtdDisponivel < quantidade){
+        await t.rollback();
         return res
           .status(400)
           .json({success:false, message:"A quantidade solicitada ao item é superior que a disponivel em estoque"});
@@ -112,6 +115,18 @@ module.exports = class itemController {
         transaction: t,
         lock: t.LOCK.UPDATE
       });
+
+      await estoque.increment("quantidade_reservada", {
+          by: quantidade,
+          transaction: t,
+        });
+      
+        await registrarLog({
+          tabela_db: "Estoque",
+          acao: "edição",
+          registro_id: estoque.id,
+          detalhe: `O estoque teve alteração na quantidade onde foi reservado ${quantidade} do estoque do produto ${produto.nome}`,
+        });
 
       if (!buscaItemDuplicado) {
         const item = {
@@ -172,7 +187,6 @@ module.exports = class itemController {
           message: "Item editado com sucesso",
           data: buscaItemDuplicado,
         });
-
       }
     } catch (err) {
       if (!t.finished) {
@@ -233,7 +247,7 @@ module.exports = class itemController {
         return res
           .status(404)
           .json({ success: false, message: "Item não foi encontrado" });
-      }
+      };
 
       const valorAnterior = itemCadastrado.valorTotal;
 
@@ -354,9 +368,30 @@ module.exports = class itemController {
 
       if (!pedidoCadastrado) {
         await t.rollback();
+        return res
+          .status(400)
+          .json({success: false, message: "Pedido associado ao item não encontrado ou finalizado",
+        });
+      };
+
+      const estoque = await Estoque.findOne({
+        where:{produto_id:itemCadastrado.produto_id},
+        transaction:t,
+        lock: t.LOCK.UPDATE
+      });
+
+      if(!estoque){
+        await t.rollback();
+        return res
+          .status(400)
+          .json({success:false, message:"Não foi encontrado o estoque para o produto deste pedido"});
+      }
+
+      if (estoque.quantidade_reservada < itemCadastrado.quantidade) {
+        await t.rollback();
         return res.status(400).json({
           success: false,
-          message: "Pedido associado ao item não encontrado ou finalizado",
+          message: "Inconsistência no estoque"
         });
       }
 
@@ -367,6 +402,11 @@ module.exports = class itemController {
         transaction: t,
       });
 
+      await estoque.decrement("quantidade_reservada", {
+        by: itemCadastrado.quantidade,
+        transaction: t,
+      });
+
       await t.commit();
 
       await registrarLog({
@@ -374,6 +414,13 @@ module.exports = class itemController {
         acao: "Excluir",
         registro_id: deletarItem.id,
         detalhe: `Remoção do item realizada no pedido ${deletarItem.pedido_id}`,
+      });
+
+      await registrarLog({
+        tabela_db: "Estoque",
+        acao: "Remove quantidade reservada",
+        registro_id: estoque.id,
+        detalhe: `Remoção do item realizada no pedido ${deletarItem.pedido_id} fez ser tirada ${itemCadastrado.quantidade} da quantidade reservada`,
       });
 
       return res.status(200).json({

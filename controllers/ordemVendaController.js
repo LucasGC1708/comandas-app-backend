@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const { OrdemVenda, Pedido, Cliente, Categoria } = require("../models/Index");
+const { OrdemVenda, Pedido, Cliente, Categoria, Estoque, Item } = require("../models/Index");
 const registrarLog = require("../utils/log");
 
 module.exports = class ordemVendaController {
@@ -47,6 +47,7 @@ module.exports = class ordemVendaController {
 
       const dadosPedido = await Pedido.findOne({
         where: { id: dadosOrdemVenda.pedido_id },
+        include: [{ model: Item, as: "itens" }],
       });
 
       if (!dadosPedido) {
@@ -54,7 +55,7 @@ module.exports = class ordemVendaController {
           success: false,
           message: "Pedido relacionado a Ordem de venda não encontrado",
         });
-      }
+      };
 
       const clienteCadastrado = await Cliente.findOne({
         where: { id: dadosPedido.cliente_id },
@@ -64,6 +65,34 @@ module.exports = class ordemVendaController {
         return res
           .status(400)
           .json({ success: false, message: "Cliente não foi encontrado" });
+      }
+
+      for (const item of dadosPedido.itens) {
+        const estoque = await Estoque.findOne({
+          where: { produto_id: item.produto_id },
+        });
+
+        if (!estoque) {
+          return res.status(400).json({
+            success: false,
+            message: "Estoque não encontrado"
+          });
+        }
+
+        if (estoque.quantidade_reservada < item.quantidade) {
+          return res.status(400).json({
+            success: false,
+            message: "Estoque inconsistente"
+          });
+        }
+
+        await estoque.decrement("quantidade_fisica", {
+          by: item.quantidade,
+        });
+
+        await estoque.decrement("quantidade_reservada", {
+          by: item.quantidade,
+        });
       }
 
       const pontosAcumulados = 
