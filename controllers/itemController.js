@@ -9,6 +9,7 @@ const {
 const { formataPreco } = require("../utils/helpers");
 const registrarLog = require("../utils/log");
 const db = require("../db/conn");
+const { where } = require("sequelize");
 
 module.exports = class itemController {
   static async criarItem(req, res) {
@@ -281,7 +282,89 @@ module.exports = class itemController {
         return res
           .status(404)
           .json({ success: false, message: "Produto não encontrando" });
+      };
+
+      if(produto_id != itemCadastrado.produto_id){
+
+        const estoqueTrocado = await Estoque.findOne({
+          where:{produto_id: produto_id},
+          transaction: t,
+          lock: t.LOCK.UPDATE
+        });
+
+        if (!estoqueTrocado) {
+          await t.rollback();
+          return res
+            .status(404)
+            .json({ success: false, message: "Estoque de novo produto não encontrado" });
+        }
+
+        const disponivel = estoqueTrocado.quantidade_fisica - estoqueTrocado.quantidade_reservada;
+
+        if(disponivel < quantidade){
+          await t.rollback();
+          return res
+            .status(404)
+            .json({ success: false, message: "Quantidade alterada é maior que a disponivel no estoque" });
+        }
+
+        const estoque = await Estoque.findOne({
+          where:{produto_id:itemCadastrado.produto_id},
+          transaction: t,
+          lock: t.LOCK.UPDATE
+        });
+
+        if (!estoque) {
+          await t.rollback();
+          return res
+            .status(404)
+            .json({ success: false, message: "Estoque de antigo produto não encontrado" });
+        }
+
+        await estoque.decrement("quantidade_reservada", {
+          by: itemCadastrado.quantidade,
+          transaction: t
+        });
+
+        await estoqueTrocado.increment("quantidade_reservada", {
+          by: quantidade,
+          transaction: t
+        });
+      }else{
+        const estoque = await Estoque.findOne({
+          where:{produto_id:itemCadastrado.produto_id},
+          transaction: t,
+          lock: t.LOCK.UPDATE
+        });
+
+        if (!estoque) {
+          await t.rollback();
+          return res.status(404).json({
+            success: false,
+            message: "Estoque não encontrado"
+          });
+        }
+
+        const qtdDisponivel = estoque.quantidade_fisica - estoque.quantidade_reservada; 
+
+        const qtdDiferenca = quantidade - itemCadastrado.quantidade;
+
+        if (qtdDiferenca > 0 && qtdDisponivel < qtdDiferenca) {
+            await t.rollback();
+            return res.status(400).json({
+              success: false,
+              message: "Quantidade maior que disponível no estoque"
+          });
+        }
+
+
+        await estoque.increment("quantidade_reservada",{
+          by:qtdDiferenca,
+          transaction:t
+        })
       }
+
+      
 
       const valorTotal = formataPreco(produto.preco * quantidade);
 
@@ -313,7 +396,7 @@ module.exports = class itemController {
         detalhe: `Item foi editado para o pedido ${edicaoItem.pedido_id}`,
       });
 
-      return res.status(201).json({
+      return res.status(200).json({
         success: true,
         message: "Item editado com sucesso",
         data: edicaoItem,
