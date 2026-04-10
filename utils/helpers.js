@@ -2,4 +2,8 @@ function formataPreco(valor){
     return valor.toFixed(2);
 }
 
-module.exports = {formataPreco};
+function numeroInvalido(valor){
+    return isNaN(valor) || Number(valor) <= 0;
+}
+
+module.exports = {formataPreco, numeroInvalido};

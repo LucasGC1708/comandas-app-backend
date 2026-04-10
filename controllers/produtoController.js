@@ -1,5 +1,6 @@
 const Produto = require("../models/Produto");
 const registrarLog = require("../utils/log");
+const {validaNumero} = require('../utils/helpers');
 
 module.exports = class produtoController {
   static async criarProduto(req, res) {
@@ -12,24 +13,23 @@ module.exports = class produtoController {
           .json({ success: false, message: "Favor preenhcer todos os campos" });
       }
 
-      if (isNaN(preco)) {
+      if (numeroInvalido(preco)) {
         return res
           .status(400)
           .json({
             success: false,
-            message: "Favor preenhcer preco com número",
+            message: "Favor preenhcer preco com número maior que 0",
           });
       }
 
       const ultimoProdutoCriado = await Produto.findOne({
-        order: [["createdAt", "DESC"]],
+        where: {
+          sku: { [Op.ne]: null }
+        },
+        order: [["sku", "DESC"]],
       });
 
-      let numeroSku = 100000;
-
-      if (ultimoProdutoCriado) {
-        numeroSku = ultimoProdutoCriado.sku + 1;
-      }
+      let numeroSku = ultimoProdutoCriado ? ultimoProdutoCriado.sku + 1 : 10000;
 
       const produto = {
         nome,
@@ -78,11 +78,7 @@ module.exports = class produtoController {
         order: [["sku", "DESC"]],
       });
 
-      let numeroSku = 100000;
-
-      if (ultimoProdutoCriado) {
-        numeroSku = ultimoProdutoCriado.sku + 1;
-      }
+      let numeroSku = ultimoProdutoCriado ? ultimoProdutoCriado.sku + 1 : 10000;
 
       const produtosComSku = listaProdutos.map((produto, index) => {
         return {
@@ -163,7 +159,7 @@ module.exports = class produtoController {
           .json({ success: false, message: "Favor preenhcer os campos" });
       }
 
-      if (isNaN(preco)) {
+      if (numeroInvalido(preco)) {
         return res
           .status(400)
           .json({

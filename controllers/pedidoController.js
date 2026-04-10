@@ -38,19 +38,8 @@ module.exports = class pedidoController {
           });
       }
 
-      const ultimoPedidoCriado = await Pedido.findOne({
-        order: [["createdAt", "DESC"]],
-      });
-
-      let numeroPedido = 1;
-
-      if (ultimoPedidoCriado) {
-        numeroPedido = numeroPedido + ultimoPedidoCriado.numero_pedido;
-      }
-
       const pedido = {
         cliente_id: cliente.id,
-        numero_pedido: numeroPedido,
       };
 
       const novoPedido = await Pedido.create(pedido);
@@ -140,19 +129,16 @@ module.exports = class pedidoController {
           .json({ success: false, message: "Pedido não possui itens" });
       }
 
+      const ultimoPedidoCriado = await Pedido.findOne({
+        where: {
+          numero_pedido: { [Op.ne]: null }
+        },
+        order: [["numero_pedido", "DESC"]],
+      });
+
+      let numeroPedido = ultimoPedidoCriado ? ultimoPedidoCriado.numero_pedido + 1 : 100;
+
       const calculoPontos = Number((pedidoCadastrado.valorPedido/10).toFixed(2));
-
-      const finalizacaoPedido = await pedidoCadastrado.update({
-        status: "finalizado",
-        pontos_calculados:calculoPontos
-      });
-
-      await registrarLog({
-        tabela_db: "Pedidos",
-        acao: "Finalizado",
-        registro_id: finalizacaoPedido.id,
-        detalhe: `Pedido ${finalizacaoPedido.id} foi finalizado`,
-      });
 
       const novaOrdemVenda = await OrdemVenda.create({
         pedido_id: pedidoCadastrado.id,
@@ -163,6 +149,19 @@ module.exports = class pedidoController {
         acao: "Criada",
         registro_id: novaOrdemVenda.id,
         detalhe: `Ordem ${novaOrdemVenda.id} foi criada através do pedido ${novaOrdemVenda.pedido_id}`,
+      });
+
+      const finalizacaoPedido = await pedidoCadastrado.update({
+        status: "finalizado",
+        pontos_calculados:calculoPontos,
+        numero_pedido:numeroPedido
+      });
+
+      await registrarLog({
+        tabela_db: "Pedidos",
+        acao: "Finalizado",
+        registro_id: finalizacaoPedido.id,
+        detalhe: `Pedido ${finalizacaoPedido.numero_pedido} foi finalizado`,
       });
 
       res
@@ -232,7 +231,8 @@ module.exports = class pedidoController {
 
       await pedido.update({
         status:"pendente",
-        pontos_calculados:0.00
+        pontos_calculados:0.00,
+        numero_pedido:null
       });
 
       await registrarLog({
