@@ -20,8 +20,6 @@ app.use(
 
 //MODELS DB
 const {Cliente, Categoria, Produto, Item, Pedido, OrdemVenda} = require('./models/Index');
-// const Cliente = require('./models/Cliente');
-// const Produto = require('./models/Produto');
 
 //ROUTES
 const clienteRoutes = require('./routes/clienteRoutes');
