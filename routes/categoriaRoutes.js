@@ -11,6 +11,8 @@ router.post('/criar', categoriaController.criarCategoria);
 router.post('/criarEmMassa', categoriaController.criarCategoriasEmMassa);
 
 //ROTAS PUT
+router.put('/desativar', categoriaController.desativarCategoria);
+router.put('/editar', categoriaController.editarCategoria);
 
 //ROTAS DELETE
 

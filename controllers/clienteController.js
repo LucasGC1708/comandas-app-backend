@@ -147,4 +147,49 @@ module.exports = class clienteController {
       res.status(500).json({ success: false, message: "Erro no servidor" });
     }
   }
+
+  static async editarCliente(req, res){
+    try {
+      
+      const {clienteId, clienteCPF, clienteEmail, clienteNome} = req.body;
+
+      if(!clienteId){
+        return res
+          .status(400)
+          .json({success:false, message:"Favor informar o cliente que deseja editar"});
+      }
+
+      const cliente = await Cliente.findOne({
+        where:{id:clienteId},
+      });
+
+      if(!cliente){
+        return res
+          .status(400)
+          .json({success:false, message:"Cliente não foi encontrado"});
+      }
+
+      const clienteAtualiza = {
+        cpf: clienteCPF ? clienteCPF : cliente.cpf,
+        email: clienteEmail ? clienteEmail : cliente.email,
+        nome: clienteNome ? clienteNome : cliente.nome
+      };
+
+      await cliente.update(clienteAtualiza);
+
+      await registrarLog({
+        tabela_db: "Clientes",
+        acao: "Editado",
+        registro_id: cliente.id,
+        detalhe: `O cliente ${cliente.nome} foi editado`,
+      });
+
+      res.status(200).json({success:true, message:"Cliente atualizado com sucesso", data:cliente});
+
+
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({success:false, message:"Erro no Servidor"});
+    }
+  }
 };

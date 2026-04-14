@@ -141,4 +141,92 @@ module.exports = class categoriaController {
       });
     }
   }
+
+  //AÇÃO DE DESATIVAÇÃO
+  static async desativarCategoria(req, res){
+    try {
+      
+      const {categoriaId} = req.body;
+
+      if(!categoriaId){
+        return res
+          .status(400)
+          .json({success:false, message:"Favor informar a categoria que deseja desativar"});
+      }
+
+      const categoria = await Categoria.findOne({
+        where:{id: categoriaId},
+      });
+
+      if(!categoria){
+        return res
+          .status(400)
+          .message({success:false, message:"A categoria informada não foi encontrada"});
+      };
+
+      await categoria.update({
+        ativo: false,
+      });
+
+      registrarLog({
+        tabela_db: "categoria",
+        acao: "Criar",
+        registro_id: categoria.id,
+        detalhe: `A categoria ${categoria.nome} foi desativada com sucesso`,
+      });
+
+      res.status(200).json({success:true, message:"Categoria desativada com sucesso", data:categoria});
+
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({success:false, message:"Erro no servidor"});
+    }
+  }
+
+  //AÇÃO DE EDITAR
+  static async editarCategoria(req, res){
+    try {
+      
+      const {categoriaId, categoriaNome, categoriaDesconto, categoriaPontosNecessarios} = req.body;
+
+      if(!categoriaId){
+        return res
+          .status(400)
+          .json({success:false, message:"Favor informar a categoria que deseja alterar"});
+      }
+
+      const categoria = await Categoria.findOne({
+        where:{id:categoriaId},
+      });
+
+      if(!categoria){
+        return res
+          .status(400)
+          .json({success:false, message:"Não foi encontrado a categoria mencionada"});
+      };
+
+      const categoriaAtualiza = {
+        nome: categoriaNome ? categoriaNome : categoria.nome,
+        desconto: categoriaDesconto ? categoriaDesconto : categoria.desconto,
+        pontos_necessarios: categoriaPontosNecessarios ? categoriaPontosNecessarios : categoria.pontos_necessarios
+      };
+
+      await categoria.update(categoriaAtualiza);
+
+      registrarLog({
+        tabela_db: "categoria",
+        acao: "Editar",
+        registro_id: categoria.id,
+        detalhe: `A categoria ${categoria.nome} foi Editada com sucesso`,
+      });
+
+      res.status(200).json({success:true, message:"Categoria foi atualizada com sucesso", data:categoria});
+
+    } catch (err) {
+      console.log(err);
+      return res
+        .status(500)
+        .json({success:false, message:"Erro no Servidor"});
+    }
+  }
 };

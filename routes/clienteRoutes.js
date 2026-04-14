@@ -4,6 +4,7 @@ const router = express.Router();
 
 router.get('/buscar/:cpf', clienteController.buscaClientePorCPF);
 router.post('/criar', clienteController.criarCliente);
+router.put('/editar', clienteController.editarCliente);
 router.post('/desativar', clienteController.desativaCliente);
 
 
