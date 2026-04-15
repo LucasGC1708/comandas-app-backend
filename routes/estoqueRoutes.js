@@ -3,12 +3,14 @@ const router = express.Router();
 
 const estoqueController = require('../controllers/estoqueController');
 
+const validaToken = require('../middlewares/validaToken');
+
 //get
-router.get('/buscar', estoqueController.buscarTodosEstoques);
-router.get('/buscar/:produtoId', estoqueController.buscarEstoquePorProduto);
+router.get('/buscar', validaToken, estoqueController.buscarTodosEstoques);
+router.get('/buscar/:produtoId', validaToken, estoqueController.buscarEstoquePorProduto);
 //post
-router.post('/criar', estoqueController.criarEstoque);
+router.post('/criar', validaToken, estoqueController.criarEstoque);
 //update
-router.put('/adicionarQuantidade', estoqueController.adicionarQuantidade);
+router.put('/adicionarQuantidade', validaToken, estoqueController.adicionarQuantidade);
 
 module.exports = router;

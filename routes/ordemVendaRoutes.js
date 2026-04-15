@@ -3,7 +3,9 @@ const router = express.Router();
 
 const ordemVendaController = require('../controllers/ordemVendaController');
 
-router.get('/buscar', ordemVendaController.buscaOrdemVenda);
-router.post('/finalizar', ordemVendaController.finalizaOrdemVenda);
+const validaToken = require('../middlewares/validaToken');
+
+router.get('/buscar', validaToken, ordemVendaController.buscaOrdemVenda);
+router.post('/finalizar', validaToken, ordemVendaController.finalizaOrdemVenda);
 
 module.exports = router;

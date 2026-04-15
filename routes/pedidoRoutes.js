@@ -3,10 +3,12 @@ const router = express.Router();
 
 const pedidoController = require('../controllers/pedidoController');
 
+const validaToken = require('../middlewares/validaToken');
+
 router.post('/criar', pedidoController.criarPedido);
-router.get('/buscar/:id', pedidoController.buscarPedido);
+router.get('/buscar/:id', validaToken, pedidoController.buscarPedido);
 router.post('/finalizar/:id', pedidoController.finalizarPedido);
-router.post('/retroceder', pedidoController.retrocederPedido);
-router.post('/apagar', pedidoController.apagarPedido);
+router.post('/retroceder', validaToken, pedidoController.retrocederPedido);
+router.post('/apagar', validaToken, pedidoController.apagarPedido);
 
 module.exports = router;
