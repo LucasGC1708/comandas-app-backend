@@ -8,6 +8,7 @@ router.get('/buscar/:cpf', validaToken, clienteController.buscaClientePorCPF);
 router.post('/criar', validaToken, clienteController.criarCliente);
 router.put('/editar', validaToken, clienteController.editarCliente);
 router.post('/desativar', validaToken, clienteController.desativaCliente);
+router.post('/login', clienteController.login);
 
 
 module.exports = router;

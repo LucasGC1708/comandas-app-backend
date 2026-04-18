@@ -1,5 +1,6 @@
 const { Cliente, Categoria } = require("../models/Index");
 const registrarLog = require("../utils/log");
+const createToken = require("../utils/createToken");
 
 module.exports = class clienteController {
   static async buscaClientePorCPF(req, res) {
@@ -190,6 +191,41 @@ module.exports = class clienteController {
     } catch (err) {
       console.log(err);
       res.status(500).json({success:false, message:"Erro no Servidor"});
+    }
+  }
+
+  static async login(req, res){
+    try {
+      
+      const { cpf } = req.body;
+
+      if (!cpf) {
+        return res.status(400).json({
+          success: false,
+          message: "Informe o CPF",
+        });
+      }
+
+      const cliente = await Cliente.findOne({ where: { cpf } });
+
+      if (!cliente) {
+        return res.status(404).json({
+          success: false,
+          message: "Cliente não encontrado",
+        });
+      }
+
+      const token = createToken(cliente);
+
+      return res.status(200).json({
+        success: true,
+        message: "Login realizado com sucesso",
+        token,
+      });
+
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({success:false, message:"Erro no servidor"});
     }
   }
 };

@@ -4,60 +4,36 @@ const registrarLog = require("../utils/log");
 module.exports = class pedidoController {
   static async criarPedido(req, res) {
     try {
-      const { cpf } = req.body;
+      const clienteId = req.user.id; // 🔥 vem do token
 
-      if (!cpf) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Favor informar o cliente do pedido",
-          });
-      }
+    const pedidoPendente = await Pedido.findOne({
+      where: { cliente_id: clienteId, status: "pendente" }
+    });
 
-      const cliente = await Cliente.findOne({ where: { cpf: cpf }, raw: true });
-
-      if (!cliente) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Cliente não encontrado" });
-      }
-
-      const pedidoPendente = await Pedido.findAll({
-        where: { cliente_id: cliente.id, status: "pendente" },
-        attributes: { exclude: ["createdAt", "updatedAt"] },
+    if (pedidoPendente) {
+      return res.status(400).json({
+        success: false,
+        message: "Você já possui um pedido pendente",
+        pendente: pedidoPendente,
       });
+    }
 
-      if (pedidoPendente.length > 0) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "O cliente em questão tem um pedido pendente em seu nome",
-            pendente: pedidoPendente,
-          });
-      }
+    const novoPedido = await Pedido.create({
+      cliente_id: clienteId,
+    });
 
-      const pedido = {
-        cliente_id: cliente.id,
-      };
+    await registrarLog({
+      tabela_db: "Pedidos",
+      acao: "Criar",
+      registro_id: novoPedido.id,
+      detalhe: `Pedido criado para o cliente ${clienteId}`,
+    });
 
-      const novoPedido = await Pedido.create(pedido);
-
-      await registrarLog({
-        tabela_db: "Pedidos",
-        acao: "Criar",
-        registro_id: novoPedido.id,
-        detalhe: `Pedido criado com sucesso ${novoPedido.numero_pedido} para o cliente ${novoPedido.cliente_id}`,
-      });
-
-      res
-        .status(201)
-        .json({
-          success: true,
-          message: "Pedido criado com sucesso",
-          data: novoPedido,
-        });
+    return res.status(201).json({
+      success: true,
+      message: "Pedido criado com sucesso",
+      data: novoPedido,
+    });
     } catch (err) {
       console.log(err);
       res.status(500).json({ success: false, message: "Erro no servidor" });
